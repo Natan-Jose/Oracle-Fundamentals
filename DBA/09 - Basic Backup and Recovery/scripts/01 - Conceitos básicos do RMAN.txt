@@ -1,0 +1,209 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Conceitos básicos do RMAN											| 
+| Módulo    : Basic Backup and Recovery                                         |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/part-overview-backup-recovery.html#GUID-CD5F857C-198E-4097-A5C8-F0D7E9C00D30
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender conceitos teóricos sobre o RMAN
+💡 Compreender como funciona e algumas das capacidades do RMAN
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Primeiros Passos no RMAN
+📍 Principais Recursos do RMAN
+📍 Arquitetura do RMAN
+📍 Arquivos que o RMAN faz backup
+📍 Canais do RMAN
+📍 Archivelog mode
+📍 Fast Recovery Area (FRA)
+📍 Tipos de backup
+📍 Estratégia (Política de backup)
+📍 O dia a dia com o RMAN
+📍 Teste de restore
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ RMAN significa Recovery Manager!
+▶️ O RMAN é a principal ferramenta de backup do Oracle e todo DBA deve ter domínio sobre ele. 
+▶️ Não há custos adicionais, já vem instalado com o Oracle por default, porém há features que estão disponíveis apenas no EE
+▶️ O RMAN é um mundo, dê um passo de cada vez
+💡 A maior responsabilidade do DBA é garantir o recovery do banco
+💀 Se você perder um banco de dados e não for capaz de recuperá-lo, provavelmente você também vai perder seu emprego
+	✅ Não é de responsabilidade do DBA júnior essa questão 
+▶️ Uma das suas metas como DBA deve ser alcançar o domínio do RMAN e isso vai levar tempo. Não se preocupe com isso
+💡 Você vai dominar o RMAN praticando (e muito!)
+💀 Nunca aceite o Data Pump Export como "ferramenta" de backup!
+
+
+=================================================================
+== 🎯 Primeiros Passos no RMAN
+=================================================================
+▶️ Em primeiro lugar, você deve conhecer os conceitos do RMAN.
+▶️ Você deve conhecer de uma forma geral, do que o RMAN é capaz, mesmo que você ainda não seja capaz de fazer tudo
+▶️ Seja capaz de entender as estratégias de backup do RMAN
+▶️ Saiba conferir se os backups estão sendo executados (principal atividade de um iniciante, no que diz respeito a backup)
+▶️ Aprender a ver as configurações do RMAN
+▶️ Saiba fazer um backup do RMAN
+▶️ Saiba fazer um restore do RMAN (da maneira mais simples)
+
+
+=================================================================
+== 🎯 Principais Recursos do RMAN
+=================================================================
+▶️ Backup completo ou parcial do banco
+▶️ Backup online (depende do banco estar em archivelog mode)
+▶️ Compressão de backup
+▶️ Paralelismo
+▶️ Criptografia
+▶️ Integração com ferramentas de terceiros
+
+
+=================================================================
+== 🎯 Arquitetura do RMAN
+=================================================================
+▶️ O RMAN tem algumas componentes que compõe sua arquitetura
+▶️ Client: Simplesmente o executável do rman, muito similar ao sqlplus
+▶️ Target Database: É o banco de dados que será feito o backup e/ou recuperação
+▶️ Recovery Catalog: É o local aonde ficam salvas as informações dos backups realizados, o catálogo pode ser:
+	▫️ Control File: Por default, todas as informações de backup ficam salvas no Control File
+	▫️ Banco de dados de catálogo: É uma opção que podemos centralizar várias informações de backup de vários databases
+▶️ Media Management: É o local no qual os backups são salvos, por padrão é no disco, mas pode ser configurado para um local externo:
+	▫️ Unidade de Fita
+	▫️ Storage Externo
+	▫️ OCI
+▶️ Fast Recovery Area: É uma área em disco (Opcional) que o Oracle armazena e administra automaticamente os backups
+	💡 É muito útil no dia a dia do DBA. Procure sempre utilizar
+https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/img/bradv038.gif
+
+
+=================================================================
+== 🎯 Canais do RMAN
+=================================================================
+▶️ Um canal do RMAN representa um stream de dados para um dispositivo 
+	▫️ (Um canal representa a comunicação entre o banco de dados e o dispositivo)
+▶️ Corresponde a uma sessão no banco de dados
+▶️ Durante o processo de backup e recuperação, o canal lê os dados da origem e grava no destino
+▶️ Aumentar o número de canais, geralmente aumenta a velocidade do backup ou do recovery
+
+
+=================================================================
+== 🎯 Arquivos que o RMAN faz backup
+=================================================================
+▶️ O RMAN faz backup de arquivos!
+	▫️ Datafiles
+	▫️ Control Files
+	▫️ Archives
+	▫️ Spfile	
+
+=================================================================
+== 🎯 Archivelog Mode
+=================================================================
+▶️ Se o banco é importante, ele deve estar em archivelog mode!
+▶️ Se ele não é importante, qual a razão dele existir? 
+💡 Sempre mantenha os bancos com archive ligado
+💡 Se alguém questionar sua decisão, pergunte como seria para a empresa lidar com a perda do banco.
+
+
+=================================================================
+== 🎯 Fast Recovery Area (FRA)
+=================================================================
+▶️ Área designada para armazenar backups, archived logs e control files
+▶️ Muito mais fácil gerenciar os backups usando a FRA
+▶️ Facilita a recuperação rápida do banco de dados
+💡 Procure sempre usar a FRA!
+▶️ É muito simples, basicamente você define dois parâmetros:
+	▫️ db_recovery_file_dest
+	▫️ db_recovery_file_dest_size
+▶️ No módulo de instalação do Oracle, esses parâmetros foram definidos na criação do banco!
+
+
+=================================================================
+== 🎯 Tipos de backup
+=================================================================
+▶️ O RMAN suporte os seguintes tipos de backups: Full, Incremental e de archives
+▶️ Um backup Full contém todos os arquivos de dados do banco de dados
+▶️ O backup incremental é divido em dois tipos de backup 0 e 1
+	▫️ O backup level 0 é o equivalente ao backup full
+	▫️ O backup level 1 pode ser do tipo Diferencial ou cumulativo
+		▫️ O backup diferencial contém todos os blocos alterados desde backup incremental mais recente (0 ou 1)	
+		▫️ O backup cumulativo contém todos os blocos alterados desde backup incremental level 0 mais recente
+
+▶️ Cenário típico de um backup incremental:
+Domingo	: Backup Level 0 
+Segunda	: Backup Level 1 Diferencial (copia todos os blocos desde o backup level 0 de domingo)
+Terça	: Backup Level 1 Diferencial (copia todos os blocos desde o backup level 1 de segunda)
+Quarta	: Backup Level 1 Diferencial (copia todos os blocos desde o backup level 1 de terça)
+Quinta	: Backup Level 1 Cumulativo  (copia todos os blocos desde o backup level 0 de domingo)
+Sexta	: Backup Level 1 Diferencial (copia todos os blocos desde o backup level 1 de quinta)
+Sábado	: Backup Level 1 Diferencial (copia todos os blocos desde o backup level 1 de sexta)
+
+
+=================================================================
+== 🎯 Estratégia (Política de backup)
+=================================================================
+▶️ Qual será a frequência do backup? 
+▶️ Por quanto tempo o backup será armazenado? 
+▶️ Qual o local de armazenamento do backup?
+▶️ Existem vários fatores que influenciam na política de backup, por exemplo:
+	▫️ Tamanho do banco
+	▫️ Janela de backup
+	▫️ Espaço para armazenar o backup
+	▫️ Duração do backup
+
+▶️ Estratégia típica de backup para ambientes pequenos:
+	▫️ Backup Full diário
+	▫️ Backup de archives de hora em hora
+	▫️ Configurar a Fast Recovery Area para reter 1 backup 
+ 	▫️ Guardar o backup em uma unidade externa (fita, storage, cloud) por 30 dias
+
+▶️ Estratégia típica de backup para ambientes grandes:
+	▫️ Backup incremental (Full) no fim de semana	
+	▫️ Backup icremental (Diferencial ou Cumulativo) diário
+	▫️ Backup de archives de hora em hora
+	▫️ Configurar a Fast Recovery Area para reter 1 backup 
+ 	▫️ Guardar o backup em uma unidade externa (fita, storage, cloud) por 30 dias
+
+
+
+
+
+=================================================================
+== 🎯 O dia a dia com o RMAN
+=================================================================
+▶️ O DBA aplica a estratégia de backup uma vez e só muda quando há uma necessidade de mudar a estratégia
+▶️ Depois que configura o RMAN para refletir a estratégia de backup, ele entra no modo "Piloto Automático"
+	⚠️ Cuidado com o "Piloto automático"!
+▶️ É importante conferir se o backup está sendo executado corretamente dentro da política de backup
+▶️ Eventualmente executar um backup que falhou
+
+
+=================================================================
+== 🎯 Teste de restore
+=================================================================
+▶️ É o melhor amigo do DBA
+▶️ Você garante que o processo de backup tá funcionando e também garante seu emprego
+▶️ Você pode simular cenários de recuperação. A empresa paga para você aprender!
+▶️ Recuperar um banco após uma falha, é um cenário de estresse. O teste de restore é o calmante do DBA
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Você não deve se cobrar de saber tudo sobre o RMAN
+💡 Siga um processo de aprendizado, até alcançar o domínio
+💡 No início, o que você precisa saber é bem básico, então se preocupe em ser bom no básico!
+ 

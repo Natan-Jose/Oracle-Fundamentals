@@ -1,0 +1,182 @@
+|-------------------------------------------------------------------------------|
+| Aula		: Definindo variáveis de ambiente									|
+| Módulo	: Managing Oracle Database											|
+| Curso		: Oracle Fundamentals												|
+| Instrutor	: Marcio Mandarino													|
+| URL		: mrdba.com.br/oracle_fundamentals									|
+|-------------------------------------------------------------------------------|
+
+=================================================================
+== 🎯 Objetivos da Aula
+=================================================================
+💡 Entender como definir corretamente as variáveis de ambiente 
+💡 Variáveis de ambiente em Oracle RAC
+
+
+========================================================================================
+== 🎯 Resumo
+========================================================================================
+📍 Configurando as variáveis manualmente
+📍 Utilitário oraenv
+📍 Ajustando o bash_profile
+📍 Variáveis adicionais
+
+
+========================================================================================
+== 🎯 Conceito geral
+========================================================================================
+▶️ Uma das questões mais básicas para um DBA é saber definir as variáveis de forma correta
+▶️ Duas variáveis são obrigatórias: ORACLE_HOME e ORACLE_SID
+▶️ Definir a variável PATH é importante para não precisar passar o diretório do utilitário
+⚠️ É comum termos servidores com vários databases e mais de uma ORACLE_HOME
+
+
+========================================================================================
+== 🎯 Método 1: Configurando as variáveis manualmente
+========================================================================================
+$ env | grep 'ORACLE\|PATH' 
+
+$ cat etc/oratab
+
+$ export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+$ export ORACLE_SID=ORCLCDB
+$ export PATH=$ORACLE_HOME/bin:$PATH
+
+
+$ sqlplus / as sysdba
+$ env | grep 'ORACLE\|PATH' 
+
+
+========================================================================================
+== 🎯 Método 2: Utilitário oraenv
+========================================================================================
+$ env | grep 'ORACLE\|PATH' 
+$ cat /etc/oratab
+$ . oraenv
+
+$ env | grep 'ORACLE\|PATH' 
+$ sqlplus / as sysdba
+
+
+========================================================================================
+== 🎯 Método 3: Ajustando o bash_profile
+========================================================================================
+$ cat >> /home/oracle/.bash_profile <<EOF
+export ORACLE_SID=ORCLCDB
+export ORACLE_BASE=/opt/oracle
+export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+
+export PATH=\$ORACLE_HOME/bin:\$PATH
+EOF
+
+
+$ cat /home/oracle/.bash_profile
+
+$ env | grep 'ORACLE\|PATH' 
+$ sqlplus / as sysdba
+
+
+========================================================================================
+== 🎯 Método 4: Criando scripts personalizados
+========================================================================================
+$ . oraenv
+$ env | grep 'ORACLE\|PATH' 
+
+-- Criar um arquivo nome_db.env com as variáveis  
+
+$ cat scripts/setEnv.sh (Copiar)
+$ vi cdb1.env (Colar) 
+
+$ cp cdb1.env orcl.env
+$ vi orcl.env
+
+$ vi cdb1.env
+$ vi orcl.env
+
+========================================================================================
+== 🎯 Variáveis adicionais
+========================================================================================
+$ env | grep 'ORACLE\|PATH' 
+
+$ cat >> /home/oracle/.bash_profile <<EOF
+export SQLPATH=/home/oracle/scripts/
+export NLS_DATE_FORMAT="DD/MM/RRRR HH24:MI:SS"
+export TNS_ADMIN=\$ORACLE_HOME/network/admin/
+
+export PATH=\$ORACLE_HOME/bin:\$PATH
+EOF
+
+$ mkdir /home/oracle/scripts/
+$ cat > /home/oracle/scripts/i.sql <<EOF
+
+set lines 1200
+col INSTANCE_NAME form a20
+col HOST_NAME form a20
+col VERSION_FULL form a20
+col STATUS form a10
+col DATABASE_STATUS form a20
+col EDITION form a10
+
+select INSTANCE_NAME,HOST_NAME,VERSION_FULL,STARTUP_TIME,STATUS,LOGINS,DATABASE_STATUS,EDITION
+from v\$instance;
+
+EOF
+
+# env | grep 'ORACLE\|PATH' 
+$ sqlplus / as sysdba
+SQL> @i
+
+========================================================================================
+== 🎯 Conclusão
+========================================================================================
+💡 Sempre seja antento com as variáveis de ambiente
+💡 Domine como definir as variáveis de ambiente no servidor
+💡 Pratique os comandos acima, mas não copie e cole
+⚠️ Compreenda a sutil diferença quando você precisa se conectar em um banco em RAC
+
+
+======================================================================================================
+== 🎯 Método 1: Compartilhamento de ORACLE_HOME com múltiplos bancos — uso dinâmico via setEnv.sh
+======================================================================================================
+
+$ cat /home/oracle/scripts/setEnv.sh
+
+$ sed -i '/^export ORACLE_UNQNAME=/d' /home/oracle/scripts/setEnv.sh
+$ sed -i '/^export ORACLE_SID=/d' /home/oracle/scripts/setEnv.sh
+$ sed -i '/^export PDB_NAME=/d' /home/oracle/scripts/setEnv.sh
+
+$ sqlplus / as sysdba
+
+======================================================================================================
+== 🎯 Método 2: Compartilhamento de ORACLE_HOME com variáveis fixas no .bash_profile
+======================================================================================================
+
+-- Copiar --> 'Oracle Settings'
+
+$ cat /home/oracle/scripts/setEnv.sh
+
+-- Remover a linha existente que chama o script antigo:
+
+/home/oracle/scripts/setEnv.sh
+
+-- Adicione ao arquivo as 'Oracle Settings'
+
+$ vi /home/oracle/.bash_profile
+
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=$TMP
+
+export ORACLE_HOSTNAME=srvdb02.localdomain
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=$ORACLE_BASE/product/19c/db_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export NLS_DATE_FORMAT="dd-mm-yyyy hh24:mi:ss"
+export SQLPATH=/home/oracle/scripts/
+export DATA_DIR=/u02/oradata
+
+export PATH=/usr/sbin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin
+export PATH=$ORACLE_HOME/bin:$PATH
+
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=$ORACLE_HOME/jlib:$ORACLE_HOME/rdbms/jlib

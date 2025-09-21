@@ -1,0 +1,235 @@
+|-------------------------------------------------------------------------------|
+| Aula      :Analisando a performance de queries				 				|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/sql-tuning-advisor.html#GUID-36E17A9F-7912-483D-A10F-7748BBB924E0
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Ser capaz de gerar o plano de execução de uma query
+💡 Gerar recomendações de performance para uma query lenta
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Por onde começar?
+📍 Plano de execução da query
+📍 Plano de execução da query que você está executando
+📍 O custo de uma query
+📍 Criando um cenário com query problemática
+📍 Eecutando o SQL Tuning Advisor
+📍 Scripts úteis
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Analisar a performance de queries pode ser complexo para DBA iniciantes
+▶️ Um DBA iniciante não tem a obrigação de saber analisar a performance de queries
+	💡 Mas ele pode ter algumas "cartas na manga" para conseguir realizar uma análise incial
+
+
+=================================================================
+== 🎯 Por onde começar?
+=================================================================
+▶️ Saiba identificar as top queries do banco
+	▫️ Baseado em que? CPU? I/O? Qual wait?
+▶️ Saiba gerar um plano de execução
+▶️ Identifique o custo da query
+▶️ Executar o SQL Performance Analyzer e pegar a recomendação 
+
+
+
+=================================================================
+== 🎯 Plano de execução da query
+=================================================================
+▶️ O plano de execução é o caminho que o banco de dados vai percorrer para buscar a informação 
+▶️ Você pode gerar o plano de execução para uma query que você vai executar
+▶️ O mais comum é gerar o plano de execução para uma query que foi executada pelo sistema
+
+
+=================================================================
+== 🎯 Plano de execução da query que você está executando
+=================================================================
+▶️ Método 1: Explain plan <<SELECT>>
+▶️ Método 2: set autotrace traceonly
+
+Ex1.
+SQL> create table t1 (x date);
+SQL> insert into t1 values (sysdate);
+SQL> commit; 
+SQL> explain plan for select * from t1;
+SQL> col PLAN_TABLE_OUTPUT form a120
+SQL> SELECT PLAN_TABLE_OUTPUT  FROM TABLE(DBMS_XPLAN.DISPLAY(null, NULL,'TYPICAL'));
+
+Ex2. 
+SQL> SET AUTOTRACE TRACEONLY
+SQL> select * from t1;
+SQL> SET AUTOTRACE OFF
+
+
+SQL> col PLAN_TABLE_OUTPUT head SQL_TEXT format a850 word_wrap
+SQL> select * from TABLE(dbms_xplan.display_awr('5ckxyqfvu60pj'));
+
+
+Ex3.
+SQL> @sql_id 22356bkgsdcnh
+
+
+
+=================================================================
+== 🎯 O custo de uma query
+=================================================================
+▶️ O custo de uma query é um número que representa a quantidade de recursos computacionais necessários para executar a consulta.
+▶️ Esses recursos podem incluir CPU, memória e operações de I/O
+▶️ Muitos fatores influenciam o custo de uma query, por exemplo:
+	▫️ Índices: Uso de índices pode reduzir significativamente o custo
+	▫️ Estatísticas Atualizadas: Estatísticas desatualizadas podem levar a estimativas de custo imprecisas.
+	▫️ Número de linhas da tabela
+
+
+
+=================================================================
+== 🎯 Criando um cenário com query problemática
+=================================================================
+$ . oraenv
+ORACLE_SID = [orcl] ? orcl
+
+$ sqlplus / as sysdba
+
+-- Criando um usuário para testes
+SQL> create user teste_spa;
+SQL> grant create session, create table to teste_spa;
+SQL> alter user teste_spa quota unlimited on users;
+
+SQL> drop TABLE employees;
+
+
+-- Criando uma tabela
+CREATE TABLE teste_spa.employees (
+    employee_id NUMBER ,
+    first_name VARCHAR2(50),
+    last_name VARCHAR2(50),
+    email VARCHAR2(100),
+    hire_date DATE
+);
+
+
+-- Fazendo uma carga na tabela
+BEGIN
+    FOR i IN 1..1000000 LOOP
+        INSERT INTO teste_spa.employees (employee_id, first_name, last_name, email, hire_date) 
+        VALUES (
+            i,
+            'FirstName' || i,
+            'LastName' || i,
+            'email' || i || '@example.com',
+            TO_DATE('2020-01-01', 'YYYY-MM-DD') + MOD(i, 365)
+        );
+    END LOOP;
+    COMMIT;
+END;
+/
+
+
+-- Atualizando as estatísticas da tabela
+SQL> EXEC dbms_stats.gather_table_stats(ownname => 'TESTE_SPA', tabname =>'EMPLOYEES', cascade => TRUE);
+
+-- Executando uma query
+SQL> select first_name from teste_spa.EMPLOYEES where employee_id = 100;
+
+-- Gerando o plano de execução
+SQL> set lines 200
+SQL> alter system flush shared_pool;
+SQL> alter system flush buffer_cache;
+SQL> set autotrace traceonly
+SQL> select first_name from teste_spa.EMPLOYEES where employee_id = 100;
+
+SQL> set autotrace off
+SQL> select sql_id from v$sql where sql_text = 'select first_name from teste_spa.EMPLOYEES where employee_id = 100';
+
+
+
+
+=================================================================
+== 🎯 Eecutando o SQL Tuning Advisor
+=================================================================
+-- Criando a task
+SQL> set serverout on
+SQL> DECLARE
+  l_sql_tune_task_id  VARCHAR2(100);
+BEGIN
+  l_sql_tune_task_id := DBMS_SQLTUNE.create_tuning_task (
+                          sql_id      => 'awgp66vtuyfn5',
+                          scope       => DBMS_SQLTUNE.scope_comprehensive,
+                          time_limit  => 800,
+                          task_name   => 'Advice_awgp66vtuyfn5',
+                          description => 'Tuning task1 for statement awgp66vtuyfn5');
+  DBMS_OUTPUT.put_line('l_sql_tune_task_id: ' || l_sql_tune_task_id);
+END;
+/
+
+-- Executando a task
+SQL> exec dbms_sqltune.execute_tuning_task(task_name => 'Advice_awgp66vtuyfn5');
+
+-- Gerando o report
+SQL> SET LONG 1000000
+SQL> SET LONGCHUNKSIZE 1000000
+SQL> SET LINESIZE 1000
+SQL> col recomandation form a120
+SQL> select dbms_sqltune.report_tuning_task('Advice_awgp66vtuyfn5') recomandation from dual;
+
+
+-- Aplicar recomendação
+
+
+create index TESTE_SPA.idx_EMPLOYEE_ID on
+    TESTE_SPA.EMPLOYEES("EMPLOYEE_ID");
+
+-- Verificando o resultado
+SQL> alter system flush shared_pool;
+SQL> alter system flush buffer_cache;
+SQL> set autotrace traceonly
+SQL> select first_name from teste_spa.EMPLOYEES where employee_id = 100;
+
+Statistics
+----------------------------------------------------------
+    107  recursive calls
+      0  db block gets
+      10232  consistent gets
+      10114  physical reads
+      0  redo size
+    562  bytes sent via SQL*Net to client
+    428  bytes received via SQL*Net from client
+      2  SQL*Net roundtrips to/from client
+      9  sorts (memory)
+      0  sorts (disk)
+      1  rows processed
+
+
+=================================================================
+== 🎯 Scripts úteis
+=================================================================
+@adv_sql
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 O SQL Performance Analyzer é muito bom, mas não acerta 100%
+💡 Sempre pegue as recomendações
+⚠️ Nem sempre aplique as recomendações
+💡 Procure sempre implementar as sugestões em ambientes de teste/dev primeiro
+💡 É uma mão na roda para o iniciante, pois fornece meios de gerar uma recomendação de performance, mesmo sem entender muito de SQL Tuning
+💡 O que foi mostrado aqui, é apenas o começo. Busque evoluir em SQL Tuning, é um grande diferencial na carreira do DBA
+💡 Divulgue os resultados obtidos!
+💡 Faça as simulações dessa aula 

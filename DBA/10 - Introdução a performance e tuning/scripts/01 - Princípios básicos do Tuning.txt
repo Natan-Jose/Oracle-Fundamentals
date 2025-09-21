@@ -1,0 +1,116 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Princípios báiscos do Tuning										|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/oracle-database-performance-method.html#GUID-6203E485-FA06-4EE3-9003-4449FBDE214B
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Um overview sobre performance do Oracle
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Origem dos problemas
+📍 Busque feedbacks
+📍 Você precisa de uma baseline
+📍 Solucionando problemas de performance
+📍 Ferramentas
+📍 Oracle Standard VS Oracle Enterprise
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Tuning é um processo, primeiro você resolve o primeiro gargalo. 
+▶️ Ao remover o gargalo você pode resolver o problema ou ser levado a outro problema
+▶️ Diagnosticar com precisão o problema de desempenho é o primeiro passo para garantir que suas alterações melhorem o desempenho.
+▶️ Você precisar avaliar os recursos disponíveis para fazer o tuning do banco
+
+
+=================================================================
+== 🎯 Origem dos problemas
+=================================================================
+▶️ Normalmente, os problemas de performance são oriundos de:
+	▫️  Falta de recursos 
+	▫️  Tempo de resposta não está aceitável para as atividades do usuário
+▶️ O problema pode estar localizado em um ponto específico ou em todo o sistema
+
+
+=================================================================
+== 🎯 Busque feedbacks
+=================================================================
+▶️ Procure entender com os usuários qual o problema está ocorrendo
+	▫️ Quando o problema começou (Passado)
+	▫️ Se ainda está ocorrendo (Presente)
+	▫️ Se é em algo específico ou no sistema como um todo
+
+
+=================================================================
+== 🎯 Você precisa de uma baseline
+=================================================================
+▶️ Como você pode saber se está com problemas se você não sabe quando está bom?
+
+
+
+=================================================================
+== 🎯 Solucionando problemas de performance
+=================================================================
+▶️ Identificar maiores consumidores de recurso  Ex:. (CPU, IO. Tempo de execução, Qtde exe)
+▶️ Identificar queries mais agressivas
+▶️ Resolver o problema da query lenta
+🔄 Voltar para o início
+
+
+=================================================================
+== 🎯 Ferramentas
+=================================================================
+▶️ É sempre bom contar com ferramentas, principalmente as de interface gráfica, facilitam o trabalho
+⚠️ Muitos DBAs só conseguem resolver problemas de performance se possuir a ferramenta X,Y ou Z....
+💡 Alguns DBAs (Os melhores DBAs), entendem como funciona o Oracle e sabem avaliar a performance, independemente de ferramenta. 
+▶️ Melhor do que ferramentas, são recursos/features. As ferramentas apenas utilizam esses recursos/features.
+▶️ Alguns exemplos de ferramentas:
+	▫️ Oracle Enterprise Manager Cloud Control 
+	▫️ Oracle Enterprise Manager Express 
+	▫️ oratop
+	▫️ Sql Developer
+	▫️ Sqlplus & Sqlcl
+💡 Foque nos recursos, features, na teoria, arquiteutra do banco... As ferramentas vão variar de ambiente para ambiente!
+
+
+=================================================================
+== 🎯 Oracle Standard VS Oracle Enterprise
+=================================================================
+▶️ O Oracle Standard tem várias limitações de recursos para se analisar a performance
+▶️ O Oracle Enterprise, com suas Extra Options (Diagnostic and Tuning Pack) oferecem um bom arsernal de recursos para tuning
+▶️ É necessário entender em que tipo de ambiente você está, para determinar o que você terá ao seu dispor para realizar análises
+▶️ O Pacote Diagnostic and Tuning Pack é muito útil, traz uma série de recursos que ajudam muito no dia a dia para análise:
+	▫️ Automatic Workload Repository (AWR)
+	▫️ Automatic Database Diagnostic Monitor (ADDM)
+	▫️ Active Session History (ASH)
+	▫️ SQL Tuning Advisor
+	▫️ SQL Access Advisor
+	▫️ Memory Advisor
+	▫️ SQL Segment Advisor
+	▫️ Uma infinidade de views extras do dicionário de dados
+▶️ Se o ambiente não possui Diagnostic and Tuning Pack, você terá:
+	▫️ Statspack (Uma espécie de "pai" do AWR)
+	▫️ Views do Dicionário de Dados
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Performance e Tuning é um tema amplo e complexo, caso você queira se aprofundar
+💡 Fazer análises preliminares é relativamente simples! E nessa fase, você não será cobrado por análises profundas
+💡 Aprenda a lidar com ambientes com recursos diferentes
+💡 Lembre-se um bom dba aprende os recursos, fundamentos, arquitetura e usa as ferramentas para acelerar seu trabalho

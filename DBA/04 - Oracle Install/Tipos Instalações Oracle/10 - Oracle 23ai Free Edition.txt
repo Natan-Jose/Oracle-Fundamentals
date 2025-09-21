@@ -1,0 +1,87 @@
+Aula        : Oracle 23ai Free Edition
+Módulo      : Oracle Install
+Instrutor   : Marcio Mandarino
+URL         : https://docs.oracle.com/en/database/oracle/oracle-database/23/xeinl/index.html
+
+=================================================================
+== Objetivos da Aula:
+=================================================================
+💡 Aprender a instalar o Oracle 23ai Free Edition
+
+
+=================================================================
+== Resumo
+=================================================================
+✅ Oracle preinstall 23ai
+✅ Oracle Install 23ai
+✅ Ajustar local de criação do banco de dados
+✅ Criar o banco de dados
+✅ Ajustando  o bash_profile
+✅ Verificando o banco criado
+
+========================================================================================
+== Verificar arquivo host (nome da máquina e IP)
+========================================================================================
+# echo "192.168.68.111   srvdbora01 srvdbora01.localdomain" >> /etc/hosts 
+
+
+========================================================================================
+== Oracle preinstall 23c
+========================================================================================
+# dnf -y install oracle-database-preinstall-23ai
+
+
+========================================================================================
+== Download do Oracle Install 23ai
+========================================================================================
+# curl -L -o /tmp/ora_install/oracle-database-free-23ai-1.0-1.el8.x86_64.rpm https://download.oracle.com/otn-pub/otn_software/db-free/oracle-database-free-23ai-1.0-1.el8.x86_64.rpm
+
+
+========================================================================================
+== Install do Oracle Install 23ai
+========================================================================================
+# dnf -y localinstall /tmp/ora_install/oracle-database-free-23ai-1.0-1.el8.x86_64.rpm
+
+
+========================================================================================
+== Ajustar local de criação do banco de dados
+========================================================================================
+# cat /etc/sysconfig/oracle-free-23ai.conf
+# sed -i 's|DBFILE_DEST=|DBFILE_DEST=/oradata|' /etc/sysconfig/oracle-free-23ai.conf
+# cat /etc/sysconfig/oracle-free-23ai.conf
+
+
+========================================================================================
+== Permissão para o diretório oradata
+========================================================================================
+# chown -R oracle.oinstall /oradata/
+
+
+========================================================================================
+== Criar o banco de dados
+========================================================================================
+# (echo "Wellcome1"; echo "Wellcome1";) | /etc/init.d/oracle-free-23ai configure
+
+
+========================================================================================
+== Usando o oraenv para definir as variáveis de ambiente
+========================================================================================
+# sudo su - oracle
+
+$ . oraenv
+
+========================================================================================
+== Verificando o banco criado
+========================================================================================
+$ sqlplus / as sysdba
+
+SQL> set lines 1200
+SQL> col INSTANCE_NAME form a20
+SQL> col HOST_NAME form a20
+SQL> col VERSION_FULL form a20
+SQL> col STATUS form a10
+SQL> col DATABASE_STATUS form a20
+SQL> col EDITION form a10
+
+SQL> select INSTANCE_NAME,HOST_NAME,VERSION_FULL,STARTUP_TIME,STATUS,LOGINS,DATABASE_STATUS,EDITION
+from v$instance;

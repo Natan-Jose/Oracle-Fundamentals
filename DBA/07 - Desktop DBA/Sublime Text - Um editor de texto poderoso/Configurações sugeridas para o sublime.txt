@@ -1,0 +1,32 @@
+	Configurações sugeridas para o sublime: 
+
+
+​// Settings in here override those in "Default/Preferences.sublime-settings",
+
+// and are overridden in turn by syntax-specific settings.
+
+{
+	"auto_indent": false,
+	"smart_indent": true,
+	"auto_complete": false,
+	"detect_indentation": true,
+	"trim_automatic_white_space":true,
+	"tab_completion": false,
+	"word_wrap": false,
+	"open_files_in_new_window": false,
+	"auto_find_in_selection": true,
+	"drag_text": false,
+	/*"auto_complete": false,*/
+	/*"open_files_in_new_window": false,*/
+	"font_size": 16,
+	"ignored_packages":
+
+		[
+			"Vintage",
+			],
+
+	"color_scheme": "Packages/ayu/ayu-mirage.sublime-color-scheme",
+
+	"index_files": true,
+
+}

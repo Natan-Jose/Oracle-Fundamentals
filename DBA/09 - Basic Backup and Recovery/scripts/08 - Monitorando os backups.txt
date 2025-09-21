@@ -1,0 +1,57 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Monitorando os backups											|
+| Módulo    : Basic Backup and Recovery                                         |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/reporting-rman-operations.html
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a acompanhar os backups realizados no banco
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Script úteis
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É importante que a execução dos backups seja monitorada
+▶️ O Oracle possui diversas views para auxiliar nessa atividade, alguns exemplos:
+	▫️ V$RMAN_CONFIGURATION
+	▫️ V$RMAN_BACKUP_JOB_DETAILS
+	▫️ V$BACKUP_SET_DETAILS
+	▫️ V$BACKUP_PIECE_DETAILS
+	▫️ V$RMAN_OUTPUT
+▶️ O que deve ser monitorado:
+	▫️ Status da execução dos backups
+	▫️ Espaço na Fast Recovery Area
+	▫️ Espaço no disco
+	▫️ Cumprimento da política de backup 
+▶️ Algumas empresas possuem processos e/ou ferramentas que monitoram essas questões, veja como se adaptar 
+
+
+=================================================================
+== 🎯 Script úteis
+=================================================================
+@backup
+@backup_detail (New)
+@backup_log (New)
+@fra
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Monitore diariamente os backups do banco
+💡 Aprenda a usar os scripts dessa aula, eles são bem úteis

@@ -1,0 +1,129 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Archived Log                                                      |
+| Módulo    : Basic Backup and Recovery                                         |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/23/admin/managing-archived-redo-log-files.html#GUID-5EE4AC49-E1B2-41A2-BEE7-AA951EAAB2F3
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender a importância de manter o banco em archivelog mode
+💡 Como ativar o archivelog
+ 
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Introdução
+📍 NOARCHIVELOG e ARCHIVELOG
+📍 Definindo o destino dos archives
+📍 Formatando o nome do arquivo 
+📍 Ativando o archivelog
+📍 Responsabilidades do DBA
+📍 Executando um backup dos archives
+📍 Monitorando os archives
+📍 Excluindo archives
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️  O Oracle permite que você salve grupos preenchidos de arquivos de redo log em um ou mais destinos offline (archivelog)
+▶️  O processo de transformar arquivos de redo log em arquivos de archived redo log é chamado de arquivamento.
+▶️  Esse processo só é possível se o banco de dados estiver operando no modo ARCHIVELOG.
+▶️  Um archivelog é uma cópia do redo log
+▶️  É extremamente recomendável que ambientes produtivos estejam com o archivelog ativado
+▶️  É possível ativar o archive log durante a criação do banco de dados ou após a sua criação
+▶️  Caso queira ativar o archivelog, após o banco criado, é necessário reiniciar o banco de dados
+
+
+=================================================================
+== NOARCHIVELOG e ARCHIVELOG
+=================================================================
+▶️ NOARCHIVELOG Mode:
+  ▫️ Não é possível fazer backups online
+  ▫️ Desativa o arquivamento do redo log.
+  ▫️ Não é possível realizar backups de tablespaces online.
+  ▫️ Não é possível realizar uma recuperação até o ponto da falha
+  💀 Viva perigosamennte
+▶️ ARCHIVELOG Mode:
+  ▫️ Ativa o arquivamento do redo log.
+  ▫️ É possível realizar uma recuperação até o ponto da falha
+  ▫️ Permite manter um banco de dados standby atualizado.
+
+
+=================================================================
+== Definindo o destino dos archives 
+=================================================================
+▶️ O parâmetro LOG_ARCHIVE_DEST_n define o caminho que os archives ficarão armazenados
+▶️ Sempre que possível, procure manter os archives em um disco especifíco para arquivos de backup
+▶️ Você pode definir multiplas localidades para o archive log:
+  ▫️ LOG_ARCHIVE_DEST_1 = 'LOCATION=/disk1/arc'
+  ▫️ LOG_ARCHIVE_DEST_2 = 'LOCATION=/disk2/arc'
+  ▫️ LOG_ARCHIVE_DEST_3 = 'SERVICE=standby1'
+  ▫️ LOG_ARCHIVE_DEST_4 = 'LOCATION=USE_DB_RECOVERY_FILE_DEST'
+
+=================================================================
+== Formatando o nome do arquivo  
+=================================================================
+▶️ Você pode definir o nome do arquivo através da variável LOG_ARCHIVE_FORMAT
+  ▫️ %s log sequence number
+  ▫️ %S log sequence number, zero filled
+  ▫️ %t thread number
+  ▫️ %T thread number, zero filled
+  ▫️ %a activation ID
+  ▫️ %d database ID
+  ▫️ %r resetlogs ID that ensures unique names are constructed for the archived log files across multiple incarnations of the database
+
+
+=================================================================
+== Ativando o archivelog
+=================================================================
+-- Formatando o nome do archivelog
+SQL> alter system set log_archive_format='arc_%t_%s_%r.arc' scope=spfile;
+
+-- Definindo o destino do archivelog
+SQL> alter system set log_archive_dest_1='location=USE_DB_RECOVERY_FILE_DEST' scope=spfile;
+
+-- Ativando o Archivelog
+SQL> shutdown immediate;
+SQL> startup mount;
+SQL> alter database archivelog;
+SQL> alter database open;
+
+ALTER SYSTEM ARCHIVE LOG ALL;
+SELECT GROUP#, STATUS, ARCHIVED, SEQUENCE# FROM V$LOG;
+/backup/ORCL/archivelog/2025_07_15
+
+-- Verificando o archivelog
+SQL> archive log list;
+SQL> show parameter log_archive_format;
+SQL> show parameter log_archive_dest_1;
+SQL> show parameter db_recovery_file_dest;
+
+-- Testando a geração dos archives
+SQL> alter system switch logfile;
+SQL> alter system switch logfile;
+SQL> alter system switch logfile;
+SQL> exit;
+
+$ ls -lhtr /backup/${ORACLE_SID}/archivelog/
+
+=================================================================
+== Responsabilidades do DBA
+=================================================================
+‼️ Monitorar o espaço em disco ocupado pelos archives
+‼️ Monitorar o espaço na FRA ocupado pelos archives
+‼️ Realizar backups dos archives
+‼️ Excluir archives após envio para o destino (backup ou standby)
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Os Archived Logs são crucias para a estratégia de backup e recuperação
+💡 Pratique colocar o banco de dados archived log

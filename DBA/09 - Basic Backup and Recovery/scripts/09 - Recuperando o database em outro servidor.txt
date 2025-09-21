@@ -1,0 +1,261 @@
+
+| Aula      : Recuperando o database em outro servidor			 										|
+| Módulo    : Basic Backup and Recovery                                         |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/rman-complete-database-recovery.html#GUID-4EBD9D56-9700-45A1-B233-1F5506A04532
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender como restaurar um banco de forma completa em outro servidor
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Steps para o restore do banco completo
+📍 Criando uma tabela de teste
+📍 Fazendo backup no banco de origem
+📍 Criando diretórios no servidor de destino
+📍 Copiando o backup do servidor de origem para o destino
+📍 Restaurando o spfile
+📍 Restaurando o Control File
+📍 Catalogando as peças de backup
+📍 Restaurando o Database
+📍 Executando o recover
+📍 Abrindo o banco de dados
+📍 Consultando o estado do banco de dados
+📍 Excluindo o banco de dados criado
+📍 Efetuando um novo restore
+📍 Conclusão
+
+
+
+/u01 binarios
+/u02 datafiles
+/u03 multiplex redo e control file
+/backup backups
+
+
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Efetuar um restore completo do banco de dados é um passo importante para compreender as etapas da recuperação do banco
+▶️ Para fins didáticos, esse restore ocorre em um ambiente equivalente a produção, porém podem ocorrer mudanças de:
+	▫️ Estrutura de diretórios
+	▫️ Nome do banco de dados
+	▫️ Sistema Operacional (Windows para Linux, por exemplo)
+	▫️ Versão do Oracle
+⚠️ Quando ocorre mudanças como exemplificado acima, novos steps são necessários, porém o conceito é o mesmo
+▶️ Você pode usar esse processo para diversos fins:
+	▫️ Replicação de bases (criação de ambientes de testes, homolog, etc)
+	▫️ Recuperação do banco de dados em caso de perda de hardware
+	▫️ Migração de dados
+	▫️ Teste de Restore
+💡 Sempre incentive a empresa a ter um processo de teste de restore, é bom para a empresa e para o DBA!
+
+
+
+
+=================================================================
+== 🎯 Steps para o restore do banco completo
+=================================================================
+▶️ Backup Full do banco de origem
+▶️ Transferência do backup do servidor de origem para o servidor de destino
+▶️ Abrir o banco como nomount
+▶️ Restore do spfile
+▶️ Restore do Control File
+▶️ Abrir o banco como mount
+▶️ Catalogar as peças de backup
+▶️ Restore do Database
+▶️ Recover do database
+▶️ Abrir o banco com a opção resetlogs
+
+
+=================================================================
+== 🎯 Criando uma tabela de teste
+=================================================================
+$ . oraenv
+$ sqlplus / as sysdba
+SQL> create table tb_test (data date);
+SQL> insert into tb_test values (sysdate);
+SQL> commit;
+SQL> exit;
+
+
+=================================================================
+== 🎯 Fazendo backup no banco de origem
+=================================================================
+$ . oraenv
+$ rman target /
+
+
+RMAN> run
+{
+allocate channel ch01 device type disk;
+allocate channel ch02 device type disk;
+allocate channel ch03 device type disk;
+allocate channel ch04 device type disk;
+backup
+  as compressed backupset
+  skip inaccessible
+  tag bkp_pontual
+  database plus archivelog;
+backup
+  tag bkp_pontual_ctfile
+    (current controlfile);
+backup
+  tag bkp_pontual_spfile
+   (spfile);
+release channel ch01;
+release channel ch02;
+release channel ch03;
+release channel ch04;
+}
+
+
+=================================================================
+== 🎯 Criando diretórios no servidor de destino
+=================================================================
+-- Diretório para o backup
+$ mkdir /backup/restore_prod
+
+-- Diretório para 
+$ mkdir -p /u01/app/oracle/admin/orcl/adump
+
+=================================================================
+== 🎯 Copiando o backup do servidor de origem para o destino
+=================================================================
+$ scp /backup/ORCL/backupset/2024_07_09/*BKP_PONTUAL* oracle@192.168.68.114:/backup/restore_prod/
+
+
+ls -lhtr /backup/ORCL/backupset/2024_07_09/*BKP_PONTUAL*
+
+=================================================================
+== 🎯 Restaurando o spfile
+=================================================================
+$ export ORACLE_SID=orcl
+$ export ORACLE_BASE=/u01/app/oracle
+$ export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+$ export PATH=$ORACLE_HOME/bin:$PATH
+
+$ rman target /
+RMAN> startup nomount;
+RMAN> restore spfile from '/backup/restore_prod/o1_mf_nnsnf_BKP_PONTUAL_SPFILE_m8tgxyz6_.bkp';
+RMAN> shutdown immediate;
+RMAN> startup nomount;
+
+
+$ ls -lhtr /u01/app/oracle/product/19c/db_1/dbs/
+
+
+=================================================================
+== 🎯 Restaurando o Control File
+=================================================================
+RMAN> restore controlfile from '/backup/restore_prod/o1_mf_ncnnf_BKP_PONTUAL_CTFILE_m8tgxxrj_.bkp';
+RMAN> alter database mount;
+
+
+=================================================================
+== 🎯 Catalogando as peças de backup
+=================================================================
+RMAN> catalog start with '/backup/restore_prod/' noprompt;
+
+
+=================================================================
+== 🎯 Restaurando o Database
+=================================================================
+RMAN> restore database;
+
+
+=================================================================
+== 🎯 Executando o recover 
+=================================================================
+RMAN> recover database until available redo;
+
+
+
+=================================================================
+== 🎯 Abrindo o banco de dados
+=================================================================
+RMAN> alter database open resetlogs;
+RMAN> exit
+
+
+=================================================================
+== 🎯 Consultando o estado do banco de dados
+=================================================================
+$ sqlplus / as sysdba
+SQL> select DBID,NAME,CREATED,RESETLOGS_TIME,OPEN_MODE from v$database;
+
+SQL> select to_char(data,'DD/MM/RRRR HH24:MI:SS') DATA from tb_test;
+SQL> exit
+
+=================================================================
+== 🎯 Excluindo o banco de dados criado
+=================================================================
+$ sqlplus / as sysdba
+SQL> shutdown abort;
+SQL> exit
+
+
+$ rm -rf /u02/oradata/ORCL/
+$ rm -rf /u03/oradata/ORCL/
+$ rm -rf /u01/app/oracle/product/19c/db_1/dbs/spfileorcl.ora
+$ rm -rf /backup/ORCL/
+
+
+
+=================================================================
+== 🎯 Efetuando um novo restore
+=================================================================
+$ mkdir -p /u01/app/oracle/admin/orcl/adump
+$ export ORACLE_SID=orcl
+$ export ORACLE_BASE=/u01/app/oracle
+$ export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+$ export PATH=$ORACLE_HOME/bin:$PATH
+
+
+
+
+$ rman target /
+
+RMAN> startup nomount;
+
+RMAN> run 
+{
+allocate channel ch01 device type disk;
+allocate channel ch02 device type disk;
+allocate channel ch03 device type disk;
+allocate channel ch04 device type disk;
+restore spfile from '/backup/restore_prod/o1_mf_nnsnf_BKP_PONTUAL_SPFILE_m8tgxyz6_.bkp';
+shutdown immediate;
+startup nomount;
+restore controlfile from '/backup/restore_prod/o1_mf_ncnnf_BKP_PONTUAL_CTFILE_m8tgxxrj_.bkp';
+alter database mount;
+catalog start with '/backup/restore_prod/' noprompt;
+restore database;
+recover database until available redo;
+alter database open resetlogs;
+release channel ch01;
+release channel ch02;
+release channel ch03;
+release channel ch04;
+}
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Dominando essa competência e colocando em prática em algum lugar, você estará mais próximo de se tornar um DBA Pleno
+💡 Pratique a execução dos comandos desta aula
+💡 Existem vários cenários de recuperação, não ache que tudo será tão simples assim!
+ 

@@ -1,0 +1,123 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Criando usuários e roles em non container databases				|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/multi/overview-of-the-multitenant-architecture.html#GUID-B14FD999-8FB2-428E-9122-BCB55DE516B8
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender mais profundamente sobre criação de usuários no Oracle
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Criando Usuários
+📍 Configurando Quotas de Tablespace
+📍 Concedendo Privilégios a Usuários
+📍 Utilizando o Comando ALTER USER
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Em um ambiente non-container, todos os usuários e seus esquemas são gerenciados dentro de um único banco de dados
+▶️ É uma estrutura mais simples de se entender
+▶️ É mais comum encontrar esse tipo de estrutura
+
+
+=================================================================
+== 🎯 Criando Usuários
+=================================================================
+▶️ Para criar um usuário, utilizamos o comando CREATE USER.
+
+-- Conectar ao banco de dados como sysdba
+$ . oraenv
+$ sqlplus / as sysdba
+
+-- Criar um usuário
+SQL> CREATE USER user1 IDENTIFIED BY password;
+
+=================================================================
+== 🎯 Configurando Quotas de Tablespace
+=================================================================
+▶️ Quotas de tablespace definem o espaço que um usuário pode utilizar em uma tablespace específica.
+
+-- Definir quota de 100 MB na tablespace USERS para o usuário user1
+SQL> ALTER USER user1 QUOTA 100M ON USERS;
+
+-- Definir quota ilimitada na tablespace USERS para o usuário user1
+SQL> ALTER USER user1 QUOTA UNLIMITED ON USERS;
+
+
+=================================================================
+== 🎯 Concedendo Privilégios a Usuários
+=================================================================
+▶️ Privilégios permitem que os usuários realizem diversas operações dentro do banco de dados.
+
+-- Conceder privilégios de sistema ao usuário user1
+SQL> GRANT CREATE SESSION, CREATE TABLE TO user1;
+
+-- Conceder privilégios de objeto ao usuário user1
+SQL> GRANT SELECT, INSERT ON hr.employees TO user1;
+
+
+=================================================================
+== 🎯 Utilizando o Comando ALTER USER
+=================================================================
+▶️ O comando ALTER USER é utilizado para modificar atributos de um usuário existente.
+
+-- Alterar a senha do usuário user1
+SQL> ALTER USER user1 IDENTIFIED BY new_password;
+
+-- Bloquear o usuário user1
+SQL> ALTER USER user1 ACCOUNT LOCK;
+
+-- Desbloquear o usuário user1
+SQL> ALTER USER user1 ACCOUNT UNLOCK;
+
+
+-- Alterar o default tablespace do usuário user1
+SQL> ALTER USER user1 DEFAULT TABLESPACE users;
+
+-- Alterar o temporary tablespace do usuário user1
+SQL> ALTER USER user1 TEMPORARY TABLESPACE temp;
+
+-- Expirar a senha do usuário user1 para forçar a mudança na próxima conexão
+SQL> ALTER USER user1 PASSWORD EXPIRE;
+
+
+=================================================================
+== 🎯 Excluindo um usuário
+=================================================================
+💀 Cuidao ao excluir um usuário, principalmente se ele tiver objetos
+💀 Fique atento ao ambiente que você está conectado
+
+-- Exclui o usuário user1
+SQL> drop user user1;
+
+--
+SQL> CREATE USER user1 IDENTIFIED BY password;
+SQL> grant create table to user1;
+SQL> create table user1.teste (x date);
+SQL> drop user user1;
+ORA-01922: CASCADE must be specified to drop 'USER1'
+
+-- Elimina o usuário user1 e TODOS os objetos do owner user1
+SQL> drop user user1 cascade;
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma tarefa muito típica para o DBA criar e manter usuários no banco de dados
+💡 Tenha bastante "fluência" na execução dessas atividades
+💡 Não copie e cole os comandos
+ 

@@ -1,0 +1,51 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Criando uma estrutura para testes									|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Criar um ambiente de desenvolvimento
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Servidor de Dev
+📍 Conclusão
+
+
+srvprd01
+srvdev01
+
+=================================================================
+== 🎯 Servidor de Dev
+=================================================================
+▶️ Crie um servidor de testes: srvdev01	
+▶️ Instale o Oracle Linux 8 (Minimal Install)
+▶️ Crie as seguintes partições:
+	▫️ /
+	▫️ /home
+	▫️ /tmp
+	▫️ /boot
+	▫️ /u01
+	▫️ /u02
+	▫️ /u03
+	▫️ /backup
+▶️ Instale o Oracle 19c via Slient Mode 
+▶️ Crie dois databases:
+	▫️ teste (NON-CDB)
+	▫️ cdbteste1 (CDB)
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma tarefa que o DBA precisa saber fazer: Criar um ambiente de desenvolviemnto

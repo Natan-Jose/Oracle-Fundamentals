@@ -1,0 +1,223 @@
+========================================================================================
+== Oracle 19c Install (GUI)
+== Marcio Mandarino
+== marcio@mrdba.com.br
+== www.mrdba.com.br
+== https://www.linkedin.com/in/marciomandarino/
+========================================================================================
+
+
+========================================================================================
+== Resumo da aula
+========================================================================================
+
+
+01. Instalar o Oracle
+02. Criar o listener
+03. Criar o banco de dados 
+04. Validar instalação
+
+
+PREPARANDO O SISTEMA OPERACIONAL 
+
+========================================================================================
+== Acessar como root
+========================================================================================
+# sudo su -
+
+
+========================================================================================
+== Verificar arquivo host (nome da máquina e IP)
+========================================================================================
+# echo "192.168.0.100    srvdb02 srvdb02.localdomain" >> /etc/hosts 
+
+
+========================================================================================
+== Desabilitar SELINUX
+========================================================================================
+# cat /etc/selinux/config | grep "SELINUX=enforcing"
+# sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+# cat /etc/selinux/config | grep "SELINUX=disabled"
+
+
+========================================================================================
+== Desabilitar Firewall
+========================================================================================
+# systemctl stop firewalld
+# systemctl disable firewalld
+
+
+========================================================================================
+== Alterando o Time Zone
+========================================================================================
+# timedatectl
+# timedatectl set-timezone America/Sao_Paulo
+
+
+========================================================================================
+== Ajustes no ssh
+========================================================================================
+# sed -i 's/#X11UseLocalhost yes/X11UseLocalhost no/' /etc/ssh/sshd_config
+# sed -i 's/#TCPKeepAlive yes/TCPKeepAlive yes/' /etc/ssh/sshd_config
+
+# grep 'X11Forwarding\|X11UseLocalhost\|TCPKeepAlive' /etc/ssh/sshd_config
+
+# systemctl restart sshd.service
+
+
+========================================================================================
+== Instalar pacotes adicionais
+========================================================================================
+# dnf install -y mlocate net-tools glibc-all-langpacks langpacks-en  
+
+
+========================================================================================
+== Update dos pacotes do Sistema Operacional
+========================================================================================
+# dnf update -y
+
+
+========================================================================================
+== Reboot
+========================================================================================
+# reboot
+
+PREPARANDO O AMBIENTE PARA O ORACLE
+
+========================================================================================
+== Instalação do Oracle pre install
+========================================================================================
+# dnf install -y oracle-database-preinstall-19c
+
+# cat /etc/passwd
+# cat /etc/group
+# vi /etc/sysctl.conf
+
+========================================================================================
+== Ajuste da senha do usuário oracle
+========================================================================================
+# passwd oracle
+
+
+========================================================================================
+== Criar os diretórios da instalação
+========================================================================================
+# export ORA_VERSION=19c
+
+# mkdir -p /u01/app/oracle/product/${ORA_VERSION}/db_1 
+# mkdir -p /u02/oradata
+# mkdir -p /u03/oradata
+# mkdir -p /home/oracle/scripts
+# chown -R oracle:oinstall /u01/app/ /u02/oradata /u03/oradata /backup /home/oracle/scripts
+# chmod -R 775 /u01/app/ /u02/oradata  /u03/oradata /backup  /home/oracle/scripts
+
+========================================================================================
+== Alterar o proprietário do instalador do oracle
+========================================================================================
+
+# chown -R oracle.oinstall /tmp/ora_install/
+
+
+========================================================================================
+== Configurando o bash_profile
+========================================================================================
+# cat > /home/oracle/scripts/setEnv.sh <<EOF
+# Oracle Settings
+export TMP=/tmp
+export TMPDIR=\$TMP
+
+export ORACLE_HOSTNAME=`hostname`
+export ORACLE_UNQNAME=cdb1
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=\$ORACLE_BASE/product/${ORA_VERSION}/db_1
+export ORA_INVENTORY=/u01/app/oraInventory
+export NLS_DATE_FORMAT="dd-mm-yyyy hh24:mi:ss"
+export ORACLE_SID=cdb1
+export SQLPATH=/home/oracle/scripts/
+export PDB_NAME=pdb1
+export DATA_DIR=/u02/oradata
+
+export PATH=/usr/sbin:/usr/local/bin:$PATH
+export PATH=\$ORACLE_HOME/bin:\$PATH
+
+export LD_LIBRARY_PATH=\$ORACLE_HOME/lib:/lib:/usr/lib
+export CLASSPATH=\$ORACLE_HOME/jlib:\$ORACLE_HOME/rdbms/jlib
+EOF
+
+# cat /home/oracle/scripts/setEnv.sh
+# chown oracle:oinstall /home/oracle/scripts/setEnv.sh
+# chmod 775 /home/oracle/scripts/setEnv.sh
+
+=================================================================
+== Adicionar a referencia ao setEnv.sh no bash_profile
+=================================================================
+# echo ". /home/oracle/scripts/setEnv.sh" >> /home/oracle/.bash_profile
+# cat /home/oracle/.bash_profile
+
+========================================================================================
+== Criar uma conexão no moba com o usuário oracle
+========================================================================================
+
+
+========================================================================================
+== Descompactar o instalador do oracle
+========================================================================================
+$ unzip -q /tmp/ora_install/LINUX.X64_193000_db_home.zip -d ${ORACLE_HOME}
+
+
+========================================================================================
+== Instalar os binários (moba conectado com o usuário oracle)
+========================================================================================
+$ env | grep 'ORACLE\|PATH' 
+
+$ export CV_ASSUME_DISTID=OEL7.6
+$ ${ORACLE_HOME}/runInstaller
+
+
+========================================================================================
+== Criar o listener (moba conectado com o usuário oracle)
+========================================================================================
+
+
+$ netca
+
+
+========================================================================================
+== Criar o banco (moba conectado com o usuário oracle)
+========================================================================================
+
+$ dbca
+
+
+========================================================================================
+== Verificando o banco criado
+========================================================================================
+
+$ sqlplus / as sysdba
+
+SQL> set lines 1200
+SQL> col INSTANCE_NAME form a20
+SQL> col HOST_NAME form a20
+SQL> col VERSION_FULL form a20
+SQL> col STATUS form a10
+SQL> col DATABASE_STATUS form a20
+SQL> col EDITION form a10
+
+SQL> select INSTANCE_NAME,HOST_NAME,VERSION_FULL,STARTUP_TIME,STATUS,LOGINS,DATABASE_STATUS,EDITION
+from v$instance;
+
+=================================
+OBS:. Se não funcionar executar
+=================================
+
+Iniciar a instância  
+
+$ startup;
+
+=================================
+Iniciar LISTENER
+=================================
+
+$ lsnrctl start
+
+$ lsnrctl status

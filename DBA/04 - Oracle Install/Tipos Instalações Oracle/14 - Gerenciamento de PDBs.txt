@@ -1,0 +1,30 @@
+==========================================================================================
+== Estado do PDBs
+==========================================================================================
+
+Estado            | Descrição
+------------------ | -------------------------------------------------------------
+CLOSED            | Aparece no SHOW PDBS com status MOUNTED, sem acesso para leitura/escrita.
+MOUNTED           | Não pode ser usado para consultas ou transações.
+OPEN READ WRITE   | Para leitura e escrita, permitindo transações.
+OPEN READ ONLY    | Apenas para leitura, sem alterações.
+RESTRICTED        | Acessível apenas por usuários autorizados.
+
+========================================================================================
+== Criando PDBs
+========================================================================================
+
+$ export ORACLE_SID=ORCLCDB
+$ sqlplus / as sysdba
+
+SQL> create pluggable database PDB_DEV3 admin user pdb_admin identified by Wellcome1;
+SQL> show pdbs;
+SQL> alter pluggable database all open;
+SQL> alter pluggable database all save state;
+
+========================================================================================
+== Excluindo PDBs - Feche antes de excluir
+========================================================================================
+
+SQL> alter pluggable database PDB_DEV3 close;
+SQL> drop pluggable database PDB_DEV3 including datafiles;

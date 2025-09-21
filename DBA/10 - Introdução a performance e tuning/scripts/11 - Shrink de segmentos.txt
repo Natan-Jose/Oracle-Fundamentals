@@ -1,0 +1,205 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Shrink de segmentos											    |
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/managing-tables.html#GUID-D4AE1CF2-08F7-4AB2-9317-0DE20AC70D44
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a identificar e realizar o shrink de segmentos
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 O que são dados fragmentados?
+📍 Chained Rows
+📍 Upgraded Rows
+📍 Quais os principais motivos de fazermos a manutenção de segmentos
+📍 Meios de realizar a manutenção dos segmentos
+📍 Criando cenário de fragmentação
+📍 Detectando a fragmentação
+📍 Resolvendo o problema de fragmentação
+📍 Analisando a tablespace inteira
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É uma atividade típica do DBA fazer a manutenção dos segmentos do banco
+▶️ Não é uma atividade complexa, mas requer cuidados, principalmente em bancos grandes e de alto volume de acesso
+
+
+=================================================================
+== 🎯 O que são dados fragmentados?
+=================================================================
+▶️ Fragmentação de segmentos ocorre quando há espaço desperdiçado dentro de segmentos de dados, como tabelas e índices. 
+▶️ Isso pode degradar a performance do banco de dados, aumentando o tempo de resposta das consultas.
+
+
+=================================================================
+== 🎯 Chained Rows
+=================================================================
+▶️ Chained Rows (linhas encadeadas) acontecem quando uma linha é maior que o tamanho do bloco de dados. 
+▶️ Faz com que a linha se espalhe por vários blocos.
+
+
+=================================================================
+== 🎯 Upgraded Rows
+=================================================================
+▶️ Upgraded Rows (linhas atualizadas) ocorrem quando uma linha é atualizada e não cabe mais no espaço originalmente alocado.
+▶️ Quando isso ocorre, move parte ou toda a linha para um novo bloco.
+
+
+=================================================================
+== 🎯 Quais os principais motivos de fazermos a manutenção de segmentos
+=================================================================
+▶️ Desempenho
+	▫️ Degradação de performance devido a fragmentação dos segmentos 
+▶️ Gerenciamento de espaço
+	▫️ Compactação dos segmentos
+
+
+=================================================================
+== 🎯 Meios de realizar a manutenção dos segmentos
+=================================================================
+▶️ Podemos fazer a manutenção através de dois comandos:
+    ▫️ MOVE
+    ▫️ SHIRNK
+▶️ Com o comando MOVE, é possível realizar uma série de atividades
+    ▫️ Mover segmentos para outras tablespaces
+    ▫️ Compactar segmentos
+    ▫️ Resolver problemas de fragmentação
+    ▫️ Mudar o grau de paralelismo
+▶️ Com o comando SHRINK, é possível realizar apenas:
+    ▫️ Resolver problemas de fragmentação
+
+
+=================================================================
+== 🎯 Criando cenário de fragmentação
+=================================================================
+-- Criando usuario de teste
+SQL> drop user xpto cascade;
+SQL> create tablespace ts_xpto;
+SQL> create user xpto identified by xpto ;
+SQL> alter user xpto default tablespace ts_xpto;
+SQL> grant create session, create table to xpto;
+SQL> alter user xpto quota unlimited on ts_xpto;
+SQL> alter session set current_schema = xpto;
+
+SQL> set timing on
+-- criando objetos
+SQL> create table t1 as (select * from dba_objects);
+SQL> insert into t1 (select * from t1);
+SQL> insert into t1 (select * from t1);
+SQL> insert into t1 (select * from t1);
+SQL> insert into t1 (select * from t1);
+SQL> create table t2 as (select * from t1);
+SQL> create table t3 as (select * from t1);
+SQL> create table t4 as (select * from t1);
+
+SQL> create index idx_t1 on t1 (object_name);
+SQL> set timing off
+
+-- Gerando "Buracos" 
+SQL> delete from t2 where object_type = 'SYNONYM';
+SQL> commit;
+
+-- Diminuindo a ocupação dos blocos
+SQL> UPDATE t3
+SET
+    owner = 'A',
+    object_type = 'B',
+    object_name = 'C'
+WHERE
+    object_type = 'SYNONYM';
+
+SQL> commit;
+
+SQL> alter table t4 modify owner varchar2(200);
+SQL> alter table t4 modify object_type varchar2(200);
+SQL> alter table t4 modify object_name varchar2(200);
+SQL> UPDATE t4
+SET
+    owner = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    object_type = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    object_name = 'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+WHERE
+    object_type = 'SYNONYM';
+
+SQL> commit;
+
+SQL> EXEC DBMS_STATS.GATHER_SCHEMA_STATS('XPTO', cascade => TRUE, degree => 4);
+SQL> col table_name form a20
+SQL> col num_rows form 999,999,999
+SQL> select table_name, num_rows from dba_tables where owner = 'XPTO';
+
+SQL> col blocks form 999,999,999
+SQL> col segment_name form a20
+SQL> select segment_name, bytes/1024/1024 size_mb, blocks from dba_segments where owner = 'XPTO';
+
+SEGMENT_NAME            SIZE_MB       BLOCKS
+-------------------- ---------- ------------
+T2                          184       23,552
+T1                          184       23,552
+T3                          184       23,552
+T4                          224       28,672
+IDX_T1                       60        7,680
+
+
+SEGMENT_NAME            SIZE_MB       BLOCKS
+-------------------- ---------- ------------
+T2                     154.3125       19,752
+T1                      178.375       22,832
+T3                          176       22,528
+T4                       221.25       28,320
+IDX_T1                  59.1875        7,576
+
+=================================================================
+== 🎯 Detectando a fragmentação
+=================================================================
+SQL> @segment_advisor TABLE XPTO T1
+SQL> @segment_advisor TABLE XPTO T2
+SQL> @segment_advisor TABLE XPTO T3
+SQL> @segment_advisor TABLE XPTO T4
+SQL> @segment_advisor INDEX XPTO IDX_T1
+
+
+=================================================================
+== 🎯 Resolvendo o problema de fragmentação
+=================================================================
+SQL> alter table "XPTO"."T1" enable row movement;
+SQL> alter table "XPTO"."T2" enable row movement;
+SQL> alter table "XPTO"."T3" enable row movement;
+SQL> alter table "XPTO"."T4" enable row movement;
+
+SQL> alter table "XPTO"."T1" shrink space;
+SQL> alter table "XPTO"."T2" shrink space;
+SQL> alter table "XPTO"."T3" shrink space;
+SQL> alter table "XPTO"."T4" shrink space;
+SQL> alter INDEX "XPTO"."IDX_T1" shrink space;
+
+
+=================================================================
+== 🎯 Analisando a tablespace inteira
+=================================================================
+SQL> @segment_advisor TABLESPACE TS_SOE NULL
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+▶️ É uma atividade típica do DBA
+▶️ É preciso compreender quais as causas de um segmento ficar fragmentado
+▶️ Saiba identificar os segmentos fragmentados do banco
+⚠️ Atenção aos segmentos grandes, podem gerar alto consumo de recursos
+⚠️ Faça essas atividades dentro de uma janela de manutenção
+⚠️ Se possível, execute no ambiente de testes, para validar os scripts e ter uma estimativa de tempo

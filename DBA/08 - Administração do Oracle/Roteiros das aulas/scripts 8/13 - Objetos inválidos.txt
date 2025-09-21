@@ -1,0 +1,189 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Objetos inválidos													|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender o conceito de objetos inválidos no Oracle Database
+💡 Utilizar o comando ALTER COMPILE para recompilar objetos
+💡 Utilizar o pacote DBMS_UTILITY.compile_schema para recompilar objetos em um esquema
+💡 Explorar a view DBA_OBJECTS para monitorar o status dos objetos
+💡 Entender os motivos pelos quais um objeto pode ficar inválido
+💡 Simular um cenário onde uma procedure fica inválida após uma alteração em uma tabela
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Compilando um objeto inválido
+📍 Pacote DBMS_UTILITY.compile_schema
+📍 Verificando objetos inválidos
+📍 Dependência de objetos
+📍 Exemplo prático de objetos inválidos
+📍 @inv
+📍 @inv2
+📍 @compile_schema
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Os objetos inválidos ficam com o status de INVALID na DBA_OBJECTS (coluna STATUS)
+▶️ Os objetos não podem ser utilizados até que seu status esteja válido	
+▶️ É uma tarefa cotidiana do DBA cuidar do status dos objetos do banco
+💡 É uma boa prática manter o banco de dados sem objetos inválidos
+▶️ Alterações em objetos que tenham dependência, deixam os objetos dependentes inválidos
+	▫️ Neste caso, basta compilar o objeto que ele volta a ficar inválido
+▶️ Um objeto pode ficar inválido por diversos motivos:
+	▫️ Código errado
+	▫️ Falta de privilégios
+	▫️ Criação do objeto no lugar errado
+	▫️ Objeto dependente alterado
+
+
+=================================================================
+== 🎯 Compilando um objeto inválido
+=================================================================
+▶️ O comando ALTER COMPILE é utilizado para recompilar um objeto inválido.
+
+-- Recompilar uma procedure
+SQL> ALTER PROCEDURE TESTE.Get_emp_names COMPILE;
+
+-- Recompilar uma function
+SQL> ALTER FUNCTION  TESTE.calcularSalarioAnual COMPILE;
+
+-- Recompilar uma view
+SQL> ALTER VIEW TESTE.VW_EMP_DEPT COMPILE;
+
+-- Recompilar um trigger
+SQL> ALTER TRIGGER TESTE.log_salary_increase COMPILE;
+
+-- Recompilar um package 
+SQL> ALTER package TESTE.simple_package COMPILE;
+
+-- Recompilar um package body
+SQL> ALTER package TESTE.simple_package COMPILE BODY;
+
+SQL> COL object_name form a20
+SQL> col status form a10
+SQL> select object_name,OBJECT_TYPE, status from dba_objects where owner = 'TESTE';
+
+=================================================================
+== 🎯 Pacote DBMS_UTILITY.compile_schema
+=================================================================
+▶️ O pacote DBMS_UTILITY.compile_schema recompila todos os objetos inválidos em um esquema específico.
+
+-- Recompilar todos os objetos inválidos no esquema TESTE
+SQL> EXEC DBMS_UTILITY.compile_schema(schema => 'TESTE');
+
+
+=================================================================
+== 🎯 Verificando objetos inválidos
+=================================================================
+-- Consultar objetos inválidos no banco de dados
+
+SQL> set lines 200
+SQL> col owner form a20
+SQL> col object_name form a20
+SQL> col object_type form a20
+SQL> col status form a20
+SQL> SELECT owner, object_name, object_type, status
+FROM dba_objects
+WHERE status = 'INVALID';
+
+
+=================================================================
+== 🎯 Dependência de objetos
+=================================================================
+▶️ Para gerenciar dependências entre objetos, o Oracle Database fornece várias views que ajudam a identificar quais objetos dependem de outros.
+	▫️ DBA_DEPENDENCIES
+	▫️ ALL_DEPENDENCIES
+	▫️ USER_DEPENDENCIES
+
+
+-- Consultar objetos que dependem de uma tabela específica
+
+SQL> col owner form a20
+SQL> col name form a20
+SQL> SELECT owner, name, type
+FROM dba_dependencies
+WHERE referenced_owner = 'TESTE' AND referenced_name = 'EMP';
+
+=================================================================
+== 🎯 Exemplo prático de objetos inválidos
+=================================================================
+-- Criar uma tabela de exemplo
+SQL> CREATE TABLE teste.employees2 (
+    employee_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50),
+    last_name VARCHAR2(50)
+);
+
+-- Criar uma procedure que utiliza a tabela employees
+SQL> CREATE OR REPLACE PROCEDURE teste.show_employees IS
+BEGIN
+    FOR emp IN (SELECT employee_id, first_name, last_name FROM employees2) LOOP
+        DBMS_OUTPUT.PUT_LINE('Employee: ' || emp.first_name || ' ' || emp.last_name);
+    END LOOP;
+END;
+/
+
+
+SQL> SELECT owner, object_name, object_type, status
+FROM dba_objects
+WHERE owner = 'TESTE';
+
+
+
+-- Excluir a tabela employees
+SQL> drop table teste.employees2;
+
+-- Verificar o status da procedure após a alteração na tabela
+SQL> SELECT owner, object_name, status
+FROM dba_objects
+WHERE object_name = 'SHOW_EMPLOYEES';
+
+SQL> ALTER PROCEDURE teste.SHOW_EMPLOYEES compile;
+SQL> SHOW ERROR;
+
+-- Recompilar todos os objetos inválidos no esquema atual
+SQL> EXEC DBMS_UTILITY.compile_schema(schema => 'TESTE');
+
+=================================================================
+== 🎯 @inv
+=================================================================
+💡 Exibe os objetos inválidos do banco de dados 
+
+SQL> @inv
+
+=================================================================
+== 🎯 @inv2
+=================================================================
+💡 Exibe os objetos inválidos de um determinado schema
+
+SQL> @inv TESTE
+
+=================================================================
+== 🎯 @compile_schema
+=================================================================
+💡 Compila os objetos inválidos de um schema
+
+SQL> @compile_schema TESTE
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa é uma atividade cotidiana do DBA, domine-a.
+💡 Sempre que criar ou alterar objetos em um banco, verifique se ficaram obejtos inválidos
+💡 Salve os scripts utilizados nessa aula na sua pasta de scripts
+💡 Domine os scripts utilizados nessa aula!
+

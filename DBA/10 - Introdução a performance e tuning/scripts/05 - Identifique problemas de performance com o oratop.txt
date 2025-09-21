@@ -1,0 +1,190 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Identifique problemas de performance com o oratop				     |
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a analisar a performance do banco de dados com a ferramenta oratop
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Sessões do oratop
+📍 Executando o oratop
+📍 O que pode ser monitorado pelo oratop
+📍 Informações chaves
+📍 Parâmetros úteis
+📍 Exemplo prático 1
+📍 Sessão 1: Informações sobre o Database
+📍 Sessão 1: Informações sobre a instância
+📍 Sessão 3: Top 5 Events (ordenado por event wait time desc)
+📍 Sessão 4: Processos ativos (ordenado por event wait time desc)
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É uma ótima ferramenta para análisar o que está ocorrendo no banco (presente)
+▶️ Tem muitas funcionalidades
+▶️ É instalado junto com o Oracle, desde a versão 12c r2
+	▫️ Antes da versão 12c r2, você presisava baixar do MOS, mas é apenas um executável, bem simples
+▶️ Na minha opnião é o melhor recurso para saber o que está acontecendo com o banco em tempo real
+🎉 Funciona no Standard Edition
+
+
+=================================================================
+== 🎯 Sessões do oratop
+=================================================================
+▶️ O oratop tem 4 áreas:	
+	▫️ Informações gerais do database
+	▫️ Atividade da instância
+	▫️ Top Events
+	▫️ Sql mais pesados
+
+
+=================================================================
+== 🎯 Executando o oratop
+=================================================================
+▶️ É muito similar ao uso do sqlplus, sqlcl...
+▶️ Você precisa definir as variáveis de ambiente do banco que você vai analisar
+
+$ . oraenv
+$ $ORACLE_HOME/suptools/oratop/oratop -rf / as sysdba
+
+
+=================================================================
+== 🎯 O que pode ser monitorado pelo oratop
+=================================================================
+▶️ Informações sobre performance do banco
+▶️ Consumo de CPU
+▶️ Bloqueios no banco de dados
+▶️ Tablespaces
+▶️ Ocupação no ASM
+▶️ Monitora todas as instâncias do cluster de uma única vez
+💡 Eventualmente o oratop destaca alguns itens em vermelho como um "Warning"
+
+
+
+=================================================================
+== 🎯 Informações chaves
+=================================================================
+▶️ O oratop tem muitas informações, você não vai conseguir "decorar" tudo
+▶️ Porém há algumas informações que são chaves para você diagnosticar se o ambiente está com problemas
+▶️ Sessão 1: Database:
+	▫️ %db		:Atividade do banco de dados em %
+▶️ Sessão 2: Instance
+	▫️ %CPU		: Utilização da CPU em %
+	▫️ %DCP		: Utilização da CPU em % pelo database
+	▫️ LOAD		: Load do banco de dados
+	▫️ AAS		: Average Active Sessions
+	▫️ ASC		: Active Sessions que está em CPU 
+	▫️ ASI		: Active Sessions que está aguardando I/O
+	▫️ ASW		: Active Sessions que está aguardando outros eventos
+
+
+=================================================================
+== 🎯 Parâmetros úteis
+=================================================================
+-f FUll
+-i5 Intervalo em segundos (5 segundos, por exemplo)
+-r Real Time
+
+
+=================================================================
+== 🎯 Exemplo prático 1
+=================================================================
+-- Sessão 1: Como root, executar o swingbench para gerar um load no banco
+# cd /u01/swingbenchlatest/swingbench/bin/
+# ./charbench -uc 10 -cs //localhost/orcl -c ../configs/SOE_Server_Side_V2.xml -u SOE -p SOE -parallel 2
+
+-- Sessão 2: 
+$ . oraenv
+$ $ORACLE_HOME/suptools/oratop/oratop -rf / as sysdba
+
+
+=================================================================
+== 🎯 Sessão 1: Informações sobre o Database
+=================================================================
+   Version        : Oracle major version
+   db name        : db_unique_name
+   time           : time as of the most recent stats (hh24:mi:ss)
+   up             : database uptime (UTC)
+   ins            : total number of instance(s)
+   sn             : total user sessions (non-predefined)
+   us             : number of distinct users (non-predefined)
+   sga            : system global area (SGA)
+   %db            : %Active Database (work)       
+
+
+=================================================================
+== 🎯 Sessão 2: Informações sobre a instância
+=================================================================
+   ID             : Instance Id.
+   %CPU           : Host CPU Utilization (%busy)
+   %DCP           : Database cpu usage as %CPU
+   LOAD           : Current OS Load
+   AAS            : Average Active Sessions (dbtime (s/s))
+   ASC            : Active Sessions on CPU
+   ASI            : Active Sessions waiting on User I/O
+   ASW            : Active Sessions Waiting on other events
+   IDL            : Idle User Sessions (non-predefined)
+   MBPS           : I/O Megabytes per Second (throughput R/W)
+   %FR            : Shared Pool Free %
+   PGA            : Total PGA Allocated
+   UTPS           : User Transaction Per Sec
+   RT/X           : Response Time Per Txn
+   DCTR           : Database CPU Time Ratio
+   DWTR           : Database Wait Time Ratio
+
+
+=================================================================
+== 🎯 Sessão 3: Top 5 Events (ordenado por event wait time desc) 
+=================================================================
+  EVENT           : wait event name
+        (RT)      : Real-Time mode
+  TOTAL WAITS     : total waits
+  TIME(s)         : total wait time in seconds)
+  AVG_MS          : average wait time in milliseconds
+  PCT             : percent of wait time (all events)
+  WAIT_CLASS      : name of the wait class
+
+
+=================================================================
+== 🎯 Sessão 4: Processos ativos (ordenado por event wait time desc) 
+=================================================================
+   ID             : inst_id
+   SID            : session identifier
+   SPID           : oraserver process os id
+   USR            : user name
+   PROG           : process program name
+   S              : SERVER (dedicated, shared, etc.)
+   PGA            : pga_used_mem
+   SQL_ID/BLOCKER : sql_id or the final blocker's (inst:sid)
+   OPN            : operation name, e.g. select
+   E/T            : session elapsed time (active/inactive)
+   STA            : ACTive|INActive|KILled|CAChed|SNIped
+   STE            : process state, e.g. on CPU or user I/O or WAIting
+   EVENT/*LA      : session wait event name. Auto toggle with (*latch name)
+   W/T            : event wait time (Threshold: 1s)
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma ferramenta poderosa, domine-a e você já será capaz de fazer muitos troubleshooting no banco
+💡 Você precisa colocar o oratop na sua "caixa de ferramentas"
+💡 A prática é a mãe da perfeição, faça muitos laboratórios
+💡 Faça os testes efetuados nessa aula
+💡 Alguém gritou "O banco está lento!"... O oratop responde!
+💡 Sempre que tiver oportunidade no dia a dia, use o oratop para praticar!

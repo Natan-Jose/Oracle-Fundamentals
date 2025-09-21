@@ -1,0 +1,108 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Deadlocks															|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/cncpt/data-concurrency-and-consistency.html#GUID-C1971E9B-849A-4634-9575-4F8FAD697750
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Entender como funciona um Deadlock no Oracle
+💡 Saber monitorar e identificar deadlocks 
+💡 Boas práticas para lidar com deadlocks
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Causas comuns 
+📍 Gerando um deadlock 
+📍 Consequências
+📍 Como evitar
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ São situações em que duas ou mais transações entram em um estado de espera infinita, esperando uma pela outra para liberar os recursos necessários para continuar
+▶️ No Oracle Database, o processo de detecção de deadlocks é automático e quando um deadlock é identificado, uma das transações envolvidas é escolhida como “vítima” e um rollback é emitido para liberá-la
+▶️ Por ter uma resolução automática, teoricamente o DBA não tem ação
+▶️ Essa é uma questão de design de aplicação, não é um problema de banco de dados
+▶️ O DBA deve apoiar na identificação e sugestão de boas práticas para resolver problemas de deadlock
+
+=================================================================
+== 🎯 Causas comuns 
+=================================================================
+▶️ Concorrência entre transações: Duas ou mais transações tentando acessar os mesmos recursos em ordens diferentes.
+▶️ Operações complexas e longas: Transações que mantêm locks por longos períodos aumentam a chance de deadlocks.
+▶️ Má ordenação de acessos: Transações que acessam recursos em ordens inconsistentes.
+
+
+=================================================================
+== 🎯 Gerando um deadlock 
+=================================================================
+▶️ Abra 3 sessões:
+
+-- Criando estrutura para o teste
+SQL> CREATE TABLE tb_deadlock (id NUMBER);
+SQL> INSERT INTO tb_deadlock VALUES ( 1 );
+SQL> INSERT INTO tb_deadlock VALUES ( 2 );
+SQL> commit;
+SQL> exit
+$ adrci
+adrci> show homes
+adrci> set home diag/rdbms/orcl/orcl
+adrci> show alert -tail -f
+
+
+
+-- Sessão 1
+SQL> set timing on
+SQL> DELETE tb_deadlock WHERE id = 1;
+
+-- Sessão 2
+SQL> set timing on
+SQL> DELETE tb_deadlock WHERE id = 2;
+
+
+-- Sessão 1
+SQL> DELETE tb_deadlock WHERE id = 2;
+
+-- Sessão 2
+SQL> DELETE tb_deadlock WHERE id = 1;
+
+
+=================================================================
+== 🎯 Consequências
+=================================================================
+▶️ Um das transações receberá o erro ORA-00060: Deadlock detected
+▶️ A sessão continua viva. A transação que é finalizada
+▶️ Será escrito no alert do banco a ocorrência do deadlock
+▶️ Um arquivo de trace será gerado
+▶️ Deadlocks geram eventos de espera de "enq: TX - row lock contention"
+
+=================================================================
+== 🎯 Como evitar
+=================================================================
+▶️ Transações Curtas: Mantenha as transações o mais curtas possível para reduzir a janela de tempo onde deadlocks podem ocorrer
+▶️ Consistência na Ordem de Acesso: Acesse os recursos na mesma ordem em todas as transações
+▶️ Isolamento de Transações: Use níveis de isolamento apropriados para minimizar a contenção de recursos
+▶️ Monitoramento Regular: Utilize ferramentas de monitoramento para identificar e resolver padrões que podem levar a deadlocks
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 A culpa do Deadlock não é do banco, porém muitas vezes o DBA é culpado
+💡 Entenda como funciona o Deadlock para demonstrar que o problema é na aplicação
+💡 Simule o processo de deadlock
+💡 Deadlocks não é algo saudável para o banco, procure sempre solucioná-los
+
+ 

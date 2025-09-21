@@ -1,0 +1,118 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Concedendo e revogando privilégios                                |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/GRANT.html#GUID-20B4E2C0-A7F8-4BC8-A5E8-BE61BDC41AC3
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a conceder privlégios no Oracle
+💡 Saber diferenciar o privilégios de sistema e de objetos
+💡 Executar alguns casos de uso relacionados a privilégios no banco
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 System Privileges
+📍 Object Privileges
+📍 Scripts
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Para conceder privilégios, utiliza-se o comando GRANT
+▶️ Você só concede privilégios, quando você possui privilégios para conceder privilégios
+▶️ Ter acesso ao objeto, não significa que você pode conceder privilégio
+▶️ Caso o usuário conectado seja o owner do objeto, você pode conceder privilégios
+▶️ Existem dois tipos de privilégios:
+	▫️ Privilégios de sistema (System Privileges)
+	▫️ Privilégios de objetos (Objects Privileges)
+▶️ Conceder privilégios é uma atividade corriqueira no dia a dia do DBA
+⚠️ Não conceda privilégios de mais
+⚠️ Conceda apenas os privilégios solicitados. É comum que as pessoas não saibam o que precisam!
+
+
+=================================================================
+== System Privileges
+=================================================================
+▶️ A view DBA_SYS_PRIVS lista todos os privilégios de sistema
+▶️ Você pode atribuir privilégios de sistema para o usuário ou para a role
+
+-- Select que lista os privilégios de sistema disponíveis
+SQL> select name from system_privilege_map order by 1;
+
+-- cria usario teste1
+SQL> create user teste1 identified by teste1;
+-- Concede o privilégio de criar sessão para o usuário teste1
+SQL> grant CREATE SESSION to teste1;
+-- Concede múltiplos privilégios para o usuário teste1
+SQL> grant CREATE SESSION,CREATE TABLE,CREATE VIEW to teste1;
+-- Concede múltiplos privilégios para a role RO_SOE_ALL
+SQL> grant CREATE SESSION,CREATE TABLE,CREATE VIEW to RO_SOE_ALL;
+
+
+SQL> set lines 120
+SQL> col grantee form a23
+SQL> SELECT grantee,
+       privilege,
+       admin_option
+FROM dba_sys_privs
+WHERE grantee in ('TESTE1','RO_SOE_ALL') ORDER BY 1;
+
+
+=================================================================
+== Object Privileges
+=================================================================
+▶️ Você pode conceder privilégios de objetos existentes no banco 
+▶️ Você pode atribuir privilégios de objetos para o usuário ou para a role
+▶️ A view DBA_TAB_PRIVS mostra os privilégios de objeto
+▶️ Privilégios comuns de objeto:
+	☑️ packages, procedures e functions :	EXECUTE
+	☑️ sequences: SELECT
+	☑️ views: SELECT
+	☑️ tabela: SELECT, INSERT, UPDATE, DELETE, REFERENCES
+‼️ Você não concede privilégioS para "acessar" triggers e indexes
+
+SQL> create table t1 (data date);
+-- Concedendo privlégio de select na tabela t1 para o usuário teste1
+SQL> grant select on t1 to teste1;
+-- Concedendo múltiplos privilégios na tabela t1 para a role RO_SOE_ALL
+SQL> grant select,insert,update,delete on sys.t1 to RO_SOE_ALL;
+-- Concedendo todos os privilégios na tabela t1 para a role RO_SOE_ALL
+SQL> grant all on sys.t1 to RO_SOE_ALL;
+
+-- Consultando as permissões
+SQ> set lines 200
+SQL> col grantee for a25
+SQL> col owner for a25
+SQL> col table_name for a30
+SQL> SELECT grantee,
+       OWNER,
+       TABLE_NAME,
+       privilege
+FROM dba_tab_privs
+WHERE grantee in ('TESTE1','RO_SOE_ALL') order by 1,2;
+
+
+=================================================================
+== Scripts
+=================================================================
+SQL> @privs
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma tarefa muito típica para o DBA criar e manter usuários no banco de dados
+💡 Tenha bastante "fluência" na execução dessas atividades
+💡 Não copie e cole os comandos

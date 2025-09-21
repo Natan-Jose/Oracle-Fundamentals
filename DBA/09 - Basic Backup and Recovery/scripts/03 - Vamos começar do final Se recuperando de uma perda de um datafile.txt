@@ -1,0 +1,113 @@
+|--------------------------------------------------------------------------------|
+| Aula      : Vamos começar do final? Se recuperando de uma perda de um datafile!|
+| Módulo    : Basic Backup and Recovery                                          |
+| Curso     : Oracle Fundamentals                                                |
+| Instrutor : Marcio Mandarino                                                   |
+| URL       : mrdba.com.br/oracle_fundamentals                                   |
+|--------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/diagnosing-repairing-failures-dra.html
+|--------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Mostrar como pode ser simples o processo de recuperação de um desastre
+💡 Como se recuperar de uma perda de um arquivo de dados
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Executando o client do RMAN
+📍 Executando um backup
+📍 Simulando uma falha (perda de um datafile)
+📍 Restaurando o datafile usando os advisors
+📍 Entendendo os passos da recuperação
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+🎉 O processo de recuperação do banco, pode ser simples
+🤡 O processo de recuperação do banco, pode ser complexo
+▶️ Cada caso é um caso
+▶️ Temos que começar do básico, evoluindo no processo de aprendizado do RMAN
+▶️ Vamos simular um cenário simples, para mostrar como é fácil usar o RMAN
+
+
+=================================================================
+== Executando o client do RMAN
+=================================================================
+% export ORACLE_SID=orcl
+% rman
+% rman TARGET sys@orcl NOCATALOG
+% rman TARGET /
+
+RMAN> EXIT
+
+
+
+=================================================================
+== Executando um backup
+=================================================================
+RMAN> backup database;
+
+💡 Simples né!?
+🤡 Eu brinco que fazer backup todo mundo faz, mas e fazer o restore? 
+
+
+
+=================================================================
+== Simulando uma falha (perda de um datafile)
+=================================================================
+-- sessão 2
+$ adrci
+adrci> show homes
+adrci> set home diag/rdbms/orcl/orcl
+adrci> show alert -tail -f
+
+-- sessão 3
+$ rm -rf /u02/oradata/ORCL/datafile/o1_mf_soe_m66rhj41_.dbf
+$ . oraenv
+
+$ sqlplus / as sysdba
+SQL> select count(1) from SOE.INVENTORIES;
+
+=================================================================
+== Restaurando o datafile usando os advisors 
+=================================================================
+RMAN> list failure;
+RMAN> advise failure;
+RMAN> repair failure preview;
+RMAN> repair failure noprompt;
+
+🎉 Parabéns, você fez seu primeiro recovery!
+🤡 Mas não sem empolgue, nem sempre na vida real é tão simples assim!
+💡 O que eu queria mostrar, é que não é um bicho de 7 cabeças!
+
+=================================================================
+== Entendendo os passos da recuperação 
+=================================================================
+
+contents of repair script:
+   # restore and recover datafile
+   sql 'alter database datafile 5 offline';
+   restore ( datafile 5 );
+   recover datafile 5;
+   sql 'alter database datafile 5 online';
+
+1️⃣ Colocou o datafile offline
+2️⃣ Executou o restore do arquivo de dados (Lê a peça de backup)
+3️⃣ Executou o recover do datafile (Utiliza os archives e a área de redo)
+4️⃣ Colocou novamente o datafile online
+💡 É preciso compreender a diferença entre restore e recover!
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Nem sempre o processo de recuperação é um bicho de 7 cabeças!
+💡 Tente escrever os comandos para fixar, não copie e cole
+
+ 

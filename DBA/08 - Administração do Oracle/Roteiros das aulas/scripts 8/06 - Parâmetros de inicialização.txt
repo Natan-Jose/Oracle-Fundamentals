@@ -1,0 +1,337 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Parâmetros de inicialização                                       |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/initialization-parameters-2.html#GUID-FD266F6F-D047-4EBB-8D96-B51B1DCA2D61
+|-------------------------------------------------------------------------------|
+
+
+
+=================================================================
+== 🎯 Objetivos da Aula
+=================================================================
+💡 Aprender o que são os parâmetros de inicialização
+💡 Compreender a diferença entre spfile e pfile
+💡 Saber como inicializar o banco usando o spfile e o pfile
+💡 Fazer alterações no banco de dados usando o spfile e pfile
+💡 Como modificar parâmetros em ambientes RAC
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Introdução
+📍 PFILE (Parameter File)
+📍 SPFILE (Server Parameter File)
+📍 Parâmetro Scope (spfile)
+📍 Conteúdo do spfile (exemplo)
+📍 Conteúdo do pfile (exemplo)
+📍 Criando um pfile a partir do banco existente
+📍 Iniciando o banco a partir do pfile
+📍 Iniciando o banco a partir do spfile
+📍 Alterando um parâmetro de inicialização (Spfile)
+📍 Alterando um parâmetro de inicialização (pfile)
+📍 Alterando um parâmetro de inicialização no Oracle RAC (exemplo 1)
+📍 Alterando um parâmetro de inicialização no Oracle RAC (exemplo 2)
+📍 Exercícios
+
+=================================================================
+== 🎯 Introdução
+=================================================================
+▶️ O Oracle utiliza arquivos de parâmetros de inicialização para iniciar uma instância
+▶️ Esses arquivos contêm configurações que ditam o comportamento do banco de dados.
+▶️ É uma lista de parâmetros de inicialização e seus respectivos valores
+▶️ Historicamente, o Oracle usava um arquivo baseado em texto chamado PFILE
+▶️ A partir do Oracle 9i, o Oracle introduziu uma versão binária deste arquivo chamada SPFILE.
+
+
+=================================================================
+== 🎯 PFILE (Parameter File)
+=================================================================
+▶️ O pfile é um arquivo de texto que contém os parametros de inicialização
+▶️ O pfile se chama Parameter File, mas conveciou-se chamá-lo de "pfile"
+▶️ Quando um banco de dados é inicializado um arquivo de inicalização é lido (pfile ou spfile)
+▶️ O pfile não é usado por padrão, somente em situações específicas 
+  ▫️ Criação de um Data Guard
+  ▫️ Criação de um banco do zero
+▶️ As alterações no PFILE só entram em vigor após uma reinicialização do banco de dados
+
+
+=================================================================
+== 🎯 SPFILE (Server Parameter File)
+=================================================================
+▶️ O spfile é um arquivo binário que não é editável diretamente 
+▶️ Parâmetros podem ser alterados enquanto o banco de dados está em execução
+▶️ O spfile é o padrão a ser utilizado
+▶️ É uma boa práticar fazer backup regular dos spfiles
+▶️ É mais dinâmico e fácil de trabalhar que o pfile
+
+
+=================================================================
+== 🎯 Parâmetro Scope (spfile)
+=================================================================
+▶️ Define aonde a mudança será realizada: spfile, memory ou both
+  ▫️ spfile: A modificação é realizada apenas no spfile, sem afetar a instância
+  ▫️ memory: A modificação é realizada apenas na instância, sem afetar o spfile
+  ▫️ both: A modificação é realizada tanto na instância quanto no spfile
+▶️ Nem todos os parâmetros de inicialização permitem modificações em "memory"
+
+
+=================================================================
+== 🎯 Conteúdo do spfile (exemplo)
+=================================================================
+*.audit_trail='db'
+*.compatible='19.0.0'
+*.control_files='/redo1/oradata/cdb1/controlfile/o1_mf_ll81mzvf_.ctl','/redo2/oradata/cdb1/controlfile/o1_mf_ll81n003_.ctl'
+*.db_block_size=8192
+*.db_create_file_dest='/oradata'
+*.db_create_online_log_dest_1='/redo1/oradata/'
+*.db_create_online_log_dest_2='/redo2/oradata/'
+*.db_name='cdb1'
+*.db_recovery_file_dest='/backup'
+*.db_recovery_file_dest_size=20480m
+*.diagnostic_dest='/opt/oraCC"rTcle'
+*.dispatchers='(PROTOCOL=TCP) (SERVICE=cdb1XDB)'
+*.enable_pluggable_database=true
+*.local_listener='LISTENER_cdb1'
+*.nls_language='BRAZILIAN PORTUGUESE'
+*.nls_territory='BRAZIL'
+*.open_cursors=1000
+*.pga_aggregate_target=512m
+*.processes=600
+*.remote_login_passwordfile='EXCLUSIVE'
+*.sessions=600
+*.sga_target=1536m
+*.undo_tablespace='UNDOTBS1'
+
+
+=================================================================
+== 🎯 Conteúdo do pfile (exemplo)
+=================================================================
+*.audit_trail='db'
+*.compatible='19.0.0'
+*.control_files='/redo1/oradata/cdb1/controlfile/o1_mf_ll81mzvf_.ctl','/redo2/oradata/cdb1/controlfile/o1_mf_ll81n003_.ctl'
+*.db_block_size=8192
+*.db_create_file_dest='/oradata'
+*.db_create_online_log_dest_1='/redo1/oradata/'
+*.db_create_online_log_dest_2='/redo2/oradata/'
+*.db_name='cdb1'
+*.db_recovery_file_dest='/backup'
+*.db_recovery_file_dest_size=20480m
+*.diagnostic_dest='/opt/oraCC"rTcle'
+*.dispatchers='(PROTOCOL=TCP) (SERVICE=cdb1XDB)'
+*.enable_pluggable_database=true
+*.local_listener='LISTENER_cdb1'
+*.nls_language='BRAZILIAN PORTUGUESE'
+*.nls_territory='BRAZIL'
+*.open_cursors=1000
+*.pga_aggregate_target=512m
+*.processes=600
+*.remote_login_passwordfile='EXCLUSIVE'
+*.sessions=600
+*.sga_target=1536m
+*.undo_tablespace='UNDOTBS1'
+
+
+=================================================================
+== 🎯 Criando um pfile a partir do banco existente
+=================================================================
+$ sqlplus / as sysdba
+
+SQL> create pfile='/tmp/init_cdb1.ora' from spfile;
+SQL> create pfile='/tmp/init_cdb12.ora' from memory;
+SQL> exit
+
+$ cat /tmp/init_cdb1.ora
+$ cat /tmp/init_cdb12.ora
+
+
+=================================================================
+== 🎯 Iniciando o banco a partir do pfile
+=================================================================
+
+SQL> show parameter spfile;
+SQL> shutdown immediate;
+SQL> startup nomount pfile='/tmp/init_cdb1.ora';
+SQL> show parameter spfile;
+SQL> exit
+
+=================================================================
+== 🎯 Iniciando o banco a partir do spfile
+=================================================================
+$ cat /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1.ora
+$ mv /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1.ora /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1.old
+$ ls -lhtr /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1*
+
+$ sqlplus / as sysdba
+SQL> shutdown immediate;
+SQL> startup nomount; -- default spfile 
+SQL> !mv /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1.old /u01/app/oracle/product/19c/db_1/dbs/spfilecdb1.ora
+SQL> startup nomount;
+
+=================================================================
+== Consulta de Parâmetros Oracle: Quais Podem Ser Alterados Online
+=================================================================
+
+SQL> desc v$parameter;
+SQL> SELECT name, ISSYS_MODIFIABLE FROM v$parameter;
+
+
+Veja qual o objetivo de dar esse comando ISSYS_MODIFIABLE ?
+
+=================================================================
+== 🎯 Alterando um parâmetro de inicialização (Spfile)
+=================================================================
+SQL> set lines 200
+SQL> col name form a40
+SQL> col value form a50
+SQL> SELECT NAME,value ,ISDEFAULT,ISSYS_MODIFIABLE
+FROM v$parameter
+where name in ('db_recovery_file_dest_size','db_files')
+ORDER BY 1;
+
+SQL> show parameter db_recovery_file_dest_size;
+SQL> show parameter recover;
+
+-- Alterando o parâmetro somente em memória
+SQL> alter system set db_recovery_file_dest_size = 10g scope=memory;
+SQL> alter system set db_files = 500 scope=memory; --erro
+SQL> show parameter db_recovery_file_dest_size;
+SQL> shutdown immediate;
+SQL> startup;
+SQL> show parameter db_recovery_file_dest_size;
+
+-- Alterando o parâmetro somente no spfile
+SQL> alter system set db_recovery_file_dest_size = 10g scope=spfile;
+SQL> alter system set db_files = 500 scope=spfile;
+SQL> show parameter db_recovery_file_dest_size;
+SQL> shutdown immediate;
+SQL> startup;
+SQL> show parameter db_recovery_file_dest_size;
+SQL> show parameter db_files;
+
+-- Alterando o parâmetro somente no spfile e em memory (both)
+SQL> alter system set db_recovery_file_dest_size = 20g scope=both;
+SQL> show parameter db_recovery_file_dest_size;
+SQL> shutdown immediate;
+SQL> startup;
+SQL> show parameter db_recovery_file_dest_size;
+
+
+=================================================================
+== 🎯 Alterando um parâmetro de inicialização (pfile)
+=================================================================
+
+SQL> show parameter spfile;
+SQL> shutdown immediate;
+
+SQL> startup nomount pfile='/tmp/init_cdb1.ora';
+SQL> show parameter spfile;
+SQL> show parameter db_recovery_file_dest_size;
+
+-- Altera o parâmetro somente em memória
+SQL> alter system set db_recovery_file_dest_size = 10g scope=memory;
+SQL> show parameter db_recovery_file_dest_size;
+SQL> shutdown immediate;
+SQL> startup nomount pfile='/tmp/init_cdb1.ora';
+SQL> show parameter db_recovery_file_dest_size;
+
+
+SQL> shutdown immediate;
+SQL> exit
+
+$ vi /tmp/init_cdb1.ora
+$ sqlplus / as sysdba
+SQL> startup nomount pfile='/tmp/init_cdb1.ora';
+SQL> show parameter db_recovery_file_dest_size;
+
+
+=================================================================
+== 🎯 Alterando um parâmetro de inicialização no Oracle RAC (exemplo 1)
+=================================================================
+‼️ No Oracle RAC, só funciona o spfile
+
+$ sqlplus / as sysdba
+SQL> col name form a40
+SQL> col value form a30
+SQL> SET LINES 1000
+
+SQL> SELECT INST_ID,NAME,value ,ISDEFAULT,ISSYS_MODIFIABLE
+FROM gv$parameter
+where name in ('sessions','db_files')
+ORDER BY 2,1;
+
+-- Modifica o parâmetro em cada instância, de forma individual
+SQL> alter system set sessions = 900 scope=spfile sid='rac1';
+SQL> alter system set sessions = 800 scope=spfile sid='rac2';
+
+-- Parando todas as instâncias do banco de uma vez só (gerando indisponibilidade)
+$ srvctl stop database -d RAC -o IMMEDIATE
+
+-- Iniciando todas as instâncias do banco
+$ srvctl start database -d RAC
+
+$ sqlplus / as sysdba
+SQL> col name form a40
+SQL> col value form a30
+SQL> SET LINES 1000
+
+SQL> SELECT INST_ID,NAME,value ,ISDEFAULT,ISSYS_MODIFIABLE
+FROM gv$parameter
+where name in ('sessions','db_files')
+ORDER BY 2,1;
+
+
+=================================================================
+== 🎯 Alterando um parâmetro de inicialização no Oracle RAC (exemplo 2)
+=================================================================
+
+$ sqlplus / as sysdba
+SQL> col name form a40
+SQL> col value form a80
+SQL> SET LINES 1000
+
+SQL> SELECT INST_ID,NAME,value ,ISDEFAULT,ISSYS_MODIFIABLE
+FROM gv$parameter
+where name in ('processes')
+ORDER BY 2,1;
+
+-- Altera o parâmetro em todas as instâncias
+SQL> alter system set processes = 1200 scope=spfile sid='*';
+
+-- Reinicando uma instância por vez (Mantendo a disponibilidade do banco)
+$ srvctl stop instance -d RAC -i rac1 -o IMMEDIATE
+$ srvctl start instance -d RAC -i rac1 
+
+-- Reinicando uma instância por vez (Mantendo a disponibilidade do banco)
+$ srvctl stop instance -d RAC -i rac2 -o IMMEDIATE
+$ srvctl start instance -d RAC -i rac2 
+
+
+
+
+$ sqlplus / as sysdba
+SQL> col name form a40
+SQL> col value form a40
+SQL> SET LINES 1000
+
+SQL> SELECT INST_ID,NAME,value ,ISDEFAULT,ISSYS_MODIFIABLE
+FROM gv$parameter
+where name in ('processes')
+ORDER BY 2,1;
+
+
+=================================================================
+== 🎯 Exercícios
+=================================================================
+1. Crie um arquivo pfile a partir do spfile
+2. Inicie o banco a partir do pfile
+3. Crie um spfile a partir do pfile
+4. Reinicie o banco de dados usando o spfile
+5. Altere o parâmetro para large_pool_size no spfile para 64M (reinicie o banco)
+6. Altere o parâmetro para nls_language no spfile para 'AMERICAN' (reinicie o banco)
+7. Inicie o banco com o pfile, usando processes e sessions com valor de 1000
+8. Reinicie o banco de dados usando o spfile
+9. Altere o parâmetro session para 1000 apenas em memória

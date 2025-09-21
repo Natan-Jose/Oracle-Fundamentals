@@ -1,0 +1,139 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Monitorando erros com Trace Files e o Alert Log                   |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/monitoring-the-database.html#GUID-B4D1E84B-107C-42AE-82F6-7A2D603B6C84
+|-------------------------------------------------------------------------------|
+
+
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Entender o que é o alert.log e sua importância
+💡 Saber como consultar o arquivo de log
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Introdução
+📍 O que são os Alert Logs?
+📍 O que são os Trace Files?
+📍 Forçando um erro no alert
+📍 Localização do Alert Log e dos Trace Files
+📍 V$DIAG_ALERT_EXT View
+📍 Monitoramento em tempo real do alert
+📍 Monitoramento do alert via ADRCI
+
+
+=================================================================
+== 🎯 Introdução
+=================================================================
+▶️ É importante que o banco de dados seja monitorado regularmente
+▶️ Monitore regularmente o banco de dados, mesmo quando ele estiver operando normalmente
+▶️ Entender como o banco opera normalmente, ajuda a compreender quando ele está com algum problema.
+▶️ Sempre que alguém reclamar do banco, olhe o alert.log
+
+
+=================================================================
+== 🎯 O que são os Alert Logs?
+=================================================================
+▶️ Os Alert Logs são arquivos que contêm informações importantes sobre mensagens de erro e exceções que ocorrem durante as operações do banco de dados
+▶️ Cada instância do Oracle Database possui um Alert Log.
+▶️ Informações são adicionadas ao arquivo cada vez que a instância é iniciada.
+▶️ Se algo der errado com o banco de dados e a causa não for imediatamente óbvia, 
+▶️ o Alert Log é o primeiro lugar a ser verificado.
+▶️ O Alert Log é nomeado como alert_SID.log.
+▶️ O alert log tem uma versão em arquivo de texto e outra xml
+▶️ Está localizado no diretório ADR especificado pelo parâmetro DIAGNOSTIC_DEST.
+▶️ Os Alert Logs devem ser excluídos ou arquivados periodicamente
+
+
+=================================================================
+== 🎯 O que são os Trace Files?
+=================================================================
+▶️ Os Trace Files são arquivos usados pelos processos de background do Oracle para registrar ocorrências, exceções de operações de banco de dados e erros.
+▶️ Os processos de background criam e armazenam Trace Files no diretório especificado pelo parâmetro DIAGNOSTIC_DEST.
+▶️ Em certos casos, uma entrada no alert log pode direcionar para um arquivo de traces com mais detalhes.
+
+
+=================================================================
+== 🎯 Forçando um erro no alert
+=================================================================
+SQL> EXEC SYS.DBMS_SYSTEM.KSDWRT(2, 'ORA-00600: internal error code, arguments: [2252], [1903], [OracleQuebrado], [], [], [], [], []');
+SQL> EXEC SYS.DBMS_SYSTEM.KSDWRT(2, 'ORA-00666: HOJE VOCE NAO VAI DORMIR');
+
+
+=================================================================
+== 🎯 Localização do Alert Log e dos Trace Files
+=================================================================
+SQL> set lines 1000
+SQL> show parameter DIAGNOSTIC_DEST;
+SQL> Col name format a25
+SQL> Col value format a70
+SQL> Select name, value from v$diag_info;
+
+
+=================================================================
+== 🎯 V$DIAG_ALERT_EXT View
+=================================================================
+SQL> col MESSAGE_TEXT form a200
+SQL> col MESSAGE_LEVEL form a12
+SQL> set lines 1000
+SQL> select to_char(ORIGINATING_TIMESTAMP,'YYYYMMDD-HH24:MI:SS'),
+case
+  when MESSAGE_LEVEL = 1 then 'Critical'
+  when MESSAGE_LEVEL = 2 then 'Severe'
+  when MESSAGE_LEVEL = 8 then 'Important'
+  when MESSAGE_LEVEL = 16 then 'Normal'
+end MESSAGE_LEVEL
+, MESSAGE_TEXT
+from X$DBGALERTEXT
+where ORIGINATING_TIMESTAMP >= (sysdate-1/24) -- última hora
+and MESSAGE_TEXT like '%ORA-%'
+order by RECORD_ID;
+
+
+=================================================================
+== 🎯 Monitoramento em tempo real do alert
+=================================================================
+
+SQL> show parameter diag;
+SQL> cd /u01/app/oracle/diag/rdbms/cdb1/cdb1/trace
+SQL> ls -lhtr alert_cdb1.log
+SQL> tail -f alert_cdb1.log
+vi alert_cdb1.log
+
+-- sessão 1
+$ tail -50f /opt/oracle/diag/rdbms/orclcdb/ORCLCDB/trace/alert_ORCLCDB.log
+$ ls -lhtr /opt/oracle/diag/rdbms/orclcdb/ORCLCDB/alert/log.xml
+
+-- sessão 2
+$ sqlplus / as sysdba
+SQL> alter system switch logfile;
+SQL> shutdown immediate;
+SQL> startup;
+
+
+=================================================================
+== 🎯 Monitoramento do alert via ADRCI
+=================================================================
+[oracle@ol8 alert]$ adrci
+adrci> show homes
+adrci> set home diag/rdbms/orclcdb/ORCLCDB
+adrci> show alert;
+adrci> show alert -P "MESSAGE_TEXT LIKE '%ORA-%'"
+adrci> show alert -tail -f
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 O alert log é o ponto de partida para investigar problemas no banco de dados
+💡 Troubleshooting é um termo legal para investigar problemas
+

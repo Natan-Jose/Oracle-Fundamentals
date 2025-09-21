@@ -1,0 +1,162 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Average Active Session 											|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender o que significa a métrica Average Active Session 
+💡 Fazer troubleshooting no banco para identificar problemas de performance
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Como Calcular o AAS
+📍 Como Calcular o AAS
+📍 Como saber se o meu AAS é bom ou ruim?
+📍 O que o AAS nos demonstra? 
+📍 Cenário
+📍 Analisando performance
+📍 Scripts utilziados
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Average Active Session (AAS) é uma métrica muito útil quando queremos avaliar a performance do banco de uma forma mais ampla
+▶️ Essa métrica ao mesmo tempo que ela é extremamente útil, o conceito dela é confundido de uma forma gigantesca
+▶️ Quando fazemos uma tradução literal "Média de Sessões Ativas", não é possível compreender a dimensão dessa métrica
+▶️ Essa métrica representa o número de sessões que está executando algo ou aguardando algum recurso em algum ponto do tempo.
+	▫️ Sessões em Idle (inativas) não influenciam no AAS
+▶️ De uma forma geral, AAS representa a média da quantidade de tempo que o database levou para processar queries a cada segundo
+
+
+=================================================================
+== 🎯 Como Calcular o AAS
+=================================================================
+▶️ O AAS é calculado com base em dois indicadores: DB Time e Elapsed Time
+▶️ Já vimos que o DB Time é o tempo que o database leva para atender as requisões do usuário
+▶️ Já o Elapsed Time é o tempo como conhecemos, em um segundos, minutos e horas...
+▶️ Para calcular o AAS precisamos dividir o DB Time pelo Elapsed Time
+
+
+
+=================================================================
+== 🎯 Como Calcular o AAS
+=================================================================
+		  10:01	  10:02	  10:03	  10:04	  10:05	  10:06	  10:07	  10:08	  10:09	  10:10
+			|		|		|		|		|		|		|		|		|		|
+----------------------------------------------------------------------------------------
+User 1		🔥		🔥		🔥		🔥		🔥		🔥		🔥		🔥		🔥		🔥
+User 2		🔥		🔥		⏳		⏳		⏳		⏳		⏳		⏳		⏳		⏳
+User 3		😴		😴		😴		🔥		🔥		🔥		🔥		🔥		🔥		🔥
+User 4		⏳		⏳		⏳		⏳		🔥		🔥		🔥		🔥		🔥		🔥
+User 5		🔥		🔥		🔥		🔥		⏳		⏳		🔥		😴		😴		😴
+
+
+
+Legenda
+-----------------------------
+🔥 Processamento em CPU
+⏳ Aguardando algum recurso (I/O, rede, bloqueios, etc..)
+😴 Usuário Idle (inativo)
+
+▶️ O Elapsed Time foi de 10 segundos
+▶️ O DB Time foi de 44 segundos
+▶️ AAS = DB Time / Elapsed Time
+▶️ AAS = 44 / 10 = 4,4
+💡 Você não vai precisar ficar fazendo cálculos, basta consultar as views do Oracle!
+
+=================================================================
+== 🎯 Como saber se o meu AAS é bom ou ruim?
+=================================================================
+▶️ Comparando pela quantidade de CPUs disponíveis para o banco de dados, simples assim.
+▶️ Se o AAS for maior que a quantidade de CPUs disponíveis para o banco, você tem um problema
+	▫️ Qual o tamanho do problema? Vai depender de quão maior for o AAS...
+
+datadog
+https://datadog-docs.imgix.net/images/database_monitoring/dbm_apm_active_connections_breakdown.8dc3c9b02346f88c0fcf75c6bc142c4f.png?fit=max&auto=format&w=1920&h=879&dpr=2
+
+Oracle Enterprise Manager Cloud Control
+https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh00O7xG7ulHOCWS0ZrO3OXn_LGgFlXPvzoiyXv1dafyzAPKC5tUrecfwlb68E4NrBRLAjP9SwB7jBc6imue6hSCQNqyZyUfnlAU_45XNR05XSjp_hOCoLs69PFRNYYHuoQK_2cQFxp8IA/s1600/2020-02-19+08_18_38-Top+Activity_+MRPPRD01+%2528Database+Instance%2529+-+Oracle+Enterprise+Manager.jpg
+
+
+=================================================================
+== 🎯 O que o AAS nos demonstra? 
+=================================================================
+▶️ O load do Database
+▶️ Revela a Performance do banco de dados
+▶️ Detecta gargálos de performance
+▶️ É uma métrica poderosa de análise de desempenho
+
+
+=================================================================
+== 🎯 Cenário
+=================================================================
+-- Sessão1 :
+SQL> create table X (i number); 
+SQL> insert into X values (1);
+SQL> commit; 
+SQL> select * from X where i = 1 for update;
+
+-- Sessão 2:
+$ top
+
+-- Sessão 3
+SQL> update X set i = 2 where i =1;
+
+
+-- Sessão 4 (Sql Developer)
+SELECT
+    begin_time,
+    round(value, 2) aas
+FROM
+    gv$sysmetric_history
+WHERE
+        metric_name = 'Average Active Sessions'
+    AND group_id = 2
+ORDER BY
+    begin_time DESC;
+
+@ash 4
+
+    
+=================================================================
+== 🎯 Analisando performance
+=================================================================
+▶️ O AAS vai nos dizer se o banco está com problemas ou não (@aas)
+▶️ A V$ACTIVE_SESSION_HISTORY vai nos ajudar a identificar qual problema (@ash, @ash2 e @ash3)
+▶️ O @sql_id nos ajuda a identificar o sql ofensor
+
+
+=================================================================
+== 🎯 Scripts utilziados
+=================================================================
+💡 @ash
+💡 @ash2
+💡 @ash3
+💡 @aas (novo)
+💡 @sql_id
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Com esse conhecimento, você consegue analisar o presente e o passado recente
+💡 Faça, refaça a exaustão essas atividades
+💡 Domine os scripts dessa aula
+💡 Salve todos os scripts na sua pasta de scripts
+💡 Pratique até ter desenvoltura na análise
+💡 Não é a única forma de se identificar problemas, mas é uma forma muito eficiente
+💡 a View GV$SYSMETRIC_HISTORY tem várias outras métricas, estude aos poucos novas métricas!
+
+ 

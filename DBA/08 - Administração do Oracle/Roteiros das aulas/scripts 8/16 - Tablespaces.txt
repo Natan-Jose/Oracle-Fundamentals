@@ -1,0 +1,222 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Gerenciando Tablespaces						                    |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/23/admin/managing-tablespaces.html#GUID-9A3CE861-80FE-4813-B496-287B69A79C46
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender as atividades comuns de um DBA ao gerenciar tablespaces
+💡 Aprender a criar, adicionar datafiles, mover datafiles e excluir tablespaces
+💡 Explorar as views do dicionário de dados mais comuns relacionadas a tablespaces
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Criando tablespaces Smallfile
+📍 Criando tablespaces Bigfile
+📍 Adicionando Datafiles a uma Tablespace
+📍 Alterando um datafile existente
+📍 Gerenciando tablespaces em ambiente com ASM
+📍 Excluindo uma tablespace
+📍 Cuidados
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Gerenciar tablespaces é uma das atividades mais comuns de um DBA
+▶️ Eventualmente um DBA cria tablespaces
+▶️ Raramente um DBA exclui tablespaces
+▶️ Constantamente um DBA monitora tablespaces
+▶️ Cotidianamente um DBA adiciona mais espaço nas tablespaces
+▶️ As tablespaces armazenam segmentos que estão em constante crescimento
+▶️ É comum termos várias tablespaces no banco
+💀 Não deixe as tablespaces do banco ficarem sem espaço
+
+
+=================================================================
+== 🎯 Criando tablespaces Smallfile
+=================================================================
+▶️ Alguns fatores influenciam a forma como você cria uma tablespace
+    ▫️ Localização dos arquivos
+    ▫️ Parâmetro db_create_file_dest
+    ▫️ Nome dos arquivos 
+
+ SQL> SELECT NAME FROM V$DATAFILE;
+
+-- Criando uma tablespace da forma mais simples (Usando OMF)
+SQL> CREATE TABLESPACE ts_vendas_data;
+
+-- Criando uma tablespace especificando size e autoextend (Usando OMF)
+SQL> CREATE TABLESPACE ts_vendas_index datafile size 1g autoextend on next 1g maxsize 31g;
+
+-- Criar uma tablespace com um datafile inicial de 100MB (Sem OMF)
+SQL> CREATE TABLESPACE ts_vendas_lob
+DATAFILE '/u02/oradata/ORCL/datafile/ts_vendas_lob_01.dbf' SIZE 100M
+AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED;
+
+SQL> @ts
+SQL> @df
+
+💡 Crie o @df2 para filtrar os datafiles por tablespace!
+
+
+=================================================================
+== 🎯 Criando tablespaces Bigfile
+=================================================================
+💡 São tablespaces mais fáceis de gerenciar, pois não precisam ficar adicionando datafiles
+
+
+-- Criando uma bigfile tablespace da forma mais simples (Usando OMF)
+SQL> CREATE BIGFILE TABLESPACE ts_compras_data;
+
+-- Criando uma bigfile tablespace especificando size e autoextend (Usando OMF)
+SQL> CREATE BIGFILE TABLESPACE ts_compras_index datafile size 1g autoextend on next 1g maxsize 31g;
+
+SQL> CREATE BIGFILE TABLESPACE ts_compras_index3 datafile size 1g autoextend on next 1g maxsize 1T;
+
+-- Criar uma bigile tablespace com um datafile inicial de 100MB (Sem OMF)
+SQL> CREATE BIGFILE TABLESPACE ts_compras_lob
+DATAFILE '/u02/oradata/ORCL/datafile/ts_compras_data.dbf' SIZE 100M
+AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED;
+
+SQL> SELECT tablespace_name, status, contents,BIGFILE
+FROM dba_tablespaces;
+
+SQL> col file_name form a80
+SQL> SELECT file_name, tablespace_name, round(bytes/1024/1024,2) size_mb, autoextensible
+FROM dba_data_files
+where tablespace_name = 'TS_VENDAS_DATA';
+
+=================================================================
+== 🎯 Adicionando Datafiles a uma Tablespace 
+=================================================================
+▶️ Quando o espaço na tablespace fica reduzido, adicione mais datafile (smallfile tablespace)
+▶️ Procure ter um padrão. Eu gosto de manter as tablespaces com menos de 80% de ocupação
+💡 Essa atividade não é voltada para tablespaces bigfile!
+
+SQL> CREATE TABLESPACE ts_teste datafile size 50M autoextend on next 100M maxsize 250M;
+
+SQL> create table tb_teste tablespace ts_teste as (select * from dba_objects);
+SQL> insert into tb_teste (select * from tb_teste);
+SQL> @ts
+SQL> insert into tb_teste (select * from tb_teste);
+SQL> @ts
+SQL> insert into tb_teste (select * from tb_teste);
+SQL> @ts
+
+insert into tb_teste (select * from tb_teste)
+*
+ERROR at line 1:
+ORA-01653: unable to extend table SYSTEM.TB_TESTE by 1024 in tablespace TS_TESTE
+
+
+-- Adicionando um datafile na tablespace sem especificar nada (Usando OMF)
+SQL> alter TABLESPACE ts_teste add datafile size 1g autoextend on next 1g maxsize 31g;
+
+-- Adicionando um datafile na tablespace especificando tamanho e autoextend (Usando OMF)
+SQL> alter TABLESPACE ts_vendas_index add datafile size 1g autoextend on next 1g maxsize 31g;
+
+-- Adicionar um novo datafile de 200MB a uma tablespace existente
+ALTER TABLESPACE ts_vendas_lob
+ADD DATAFILE '/u02/oradata/ORCL/datafile/ts_vendas_lob_02.dbf' SIZE 200M
+AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED;
+
+SQL> col file_name form a80
+SQL> SELECT file_name, tablespace_name, round(bytes/1024/1024,2) size_mb, autoextensible
+FROM dba_data_files
+where tablespace_name like'TS_VENDAS%'
+order by 2,1;
+
+
+=================================================================
+== 🎯 Alterando um datafile existente
+=================================================================
+▶️ Essa é uma ativide bem corriqueira
+⚠️ Sempre fique atento ao espaço no disco que está sendo criado os datafiles
+💡 Essa atividade não causa indisponibilidade ao banco, ou seja, é feita online
+
+-- Smallfile tablespace
+SQL> alter database datafile '/u02/oradata/ORCL/datafile/ts_vendas_lob_01.dbf' resize 200m;
+
+-- Bigfile tablespace 
+SQL> alter tablespace TS_COMPRAS_DATA resize 200m;
+
+SQL> alter database datafile '/u02/oradata/ORCL/datafile/ts_vendas_lob_01.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED;
+
+SQL> DESC DBA_DATA_FILES;
+SQL> alter database datafile 12 resize 2g;
+
+
+=================================================================
+== 🎯 Gerenciando tablespaces em ambiente com ASM
+=================================================================
+▶️ É exatamente a mesma coisa que ambientes com File System, basta ter os mesmos cuidados com a localização do arquivo
+
+SQL> @df
+SQL> @asm
+SQL> show parameter db_create_file_dest
+
+SQL> create tablespace ts_teste datafile '+DATA' size 100m autoextend on next 10m maxsize 100m;
+SQL> alter TABLESPACE ts_teste add datafile '+DATA' size 150m autoextend on next 100m maxsize 1g;
+
+SQL> create tablespace ts_teste2 datafile  size 100m autoextend on next 100m maxsize 1g;
+
+
+=================================================================
+== 🎯 Excluindo uma tablespace
+=================================================================
+💀 Só exclua uma tablespace que não tenha segmentos!
+
+
+SQL> drop tablespace ts_teste including contents and datafiles;
+SQL> drop tablespace ts_teste2 including contents and datafiles;
+
+SQL> drop tablespace ts_vendas_data including contents and datafiles;
+SQL> drop tablespace ts_vendas_index including contents and datafiles;
+SQL> drop tablespace ts_vendas_lob including contents and datafiles;
+SQL> drop tablespace ts_compras_data including contents and datafiles;
+SQL> drop tablespace ts_compras_index including contents and datafiles;
+SQL> drop tablespace ts_compras_lob including contents and datafiles;
+SQL> drop tablespace ts_teste including contents and datafiles;
+
+create tablespace ts_teste;
+create table T (data date) tablespace ts_teste;
+insert into T values (sysdate);
+commit;
+
+select segment_name, tablespace_name 
+from dba_segments where segment_name = 'T';
+
+SELECT COUNT(1) from t;
+
+SQL> drop tablespace ts_teste including contents and datafiles;
+
+
+=================================================================
+== 🎯 Cuidados 
+=================================================================
+⚠️ Antes de criar um datafile ou uma tablespace, verifique se há espaço no ASM ou no File System
+⚠️ Crie os datafiles no local correto
+⚠️ Não deixe as tablespaces ficarem próximos do limite do espaço
+⚠️ Compreenda a diferença entre o size atual e o maxsize da tablespace, isso causa confusão
+⚠️ Cuidado ao excluir uma tablespace, verifique sempre se há segmentos nessa tablespace
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Gerenciamento de tablespaces é uma atividade crucial para qualquer DBA
+💡 Domine todas as atividades desta aula
+💡 Pratique a exaustão os comandos desta aula
+💡 Não foque em decorar os comandos, compreenda eles
+💡 Salve na sua pasta de howto os principais comandos

@@ -1,0 +1,157 @@
+|-------------------------------------------------------------------------------|
+| Aula		: Startup e shutdown												|
+| Módulo	: Managing Oracle Database											|
+| Curso		: Oracle Fundamentals												|
+| Instrutor	: Marcio Mandarino													|
+| URL		: mrdba.com.br/oracle_fundamentals									|
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/starting-up-and-shutting-down.html#GUID-045DE684-6680-4099-A49E-2F5B5FA59670
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula
+=================================================================
+💡 Aprender como funciona o processo de startup e shutdown do banco 
+💡 Etapas do processo de startup
+💡 Modos de inicialização e shutdown
+💡 Praticar o processo de shutdown e startup
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Opções para o startup do banco
+📍 Etapas do Startup
+📍 Modos de inicialização
+📍 Modos de Shutdown
+📍 Comandos via sqlplus
+📍 Alterando o status da instância
+📍 Comandos via srvctl
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Ao iniciar um banco de dados, você cria uma instância desse banco de dados e determina o estado do banco de dados. 
+▶️ Normalmente, você inicia uma instância montando e abrindo o banco de dados. 
+▶️ Isso disponibiliza o banco de dados para qualquer usuário válido se conectar no banco de dados.
+
+
+=================================================================
+== 🎯 Opções para o startup do banco
+=================================================================
+▶️ Quando o banco de dados não está configurado em cluster, você pode fazer o startup com as seguintes ferramentas:
+	▫️ SQL*Plus
+	▫️ Recovery Manager
+	▫️ Oracle Enterprise Manager Cloud Control
+▶️ Quando o banco de dados está configurado como cluster, você pode usar uma outra opção:
+	▫️ srvctl (Server Control)
+
+
+=================================================================
+== 🎯 Etapas do Startup
+=================================================================
+▶️ Etapa NOMOUNT:
+	▫️ Inicialização da instância.
+	▫️ Leitura do arquivo de parâmetros (pfile ou spfile).
+	▫️ Alocação da SGA e PGA e início dos processos de background.
+
+▶️ Etapa MOUNT:
+	▫️ Montagem do banco de dados.
+	▫️ Leitura do control file.
+
+▶️ Etapa OPEN:
+	▫️ Abertura do banco de dados.
+	▫️ Tornar o banco de dados acessível para operações.
+
+
+=================================================================
+== 🎯 Modos de inicialização
+=================================================================
+▶️  Quando você abre um banco de dados (status open), ele pode ser inicializado através dos seguintes modos:
+	▫️ Modo READ WRITE	: Banco de dados leitura e escrita (padrão).
+	▫️ Modo RESTRICT		: Acesso restrito ao banco de dados.
+	▫️ Modo READ ONLY	: Banco de dados somente leitura.
+
+
+=================================================================
+== 🎯 Modos de Shutdown
+=================================================================
+▶️ Quando você faz o shutdown do banco de dados, você pode escolher as seguintes opcões:
+	▫️ IMMEDIATE		: Desconecta todos os usuários e  volta as transações não confirmadas.
+	▫️ ABORT			: Fecha o banco de dados imediatamente sem esperar transações.
+	▫️ NORMAL		: Aguarda todas as transações serem concluídas. Não permite novas conexões.
+	▫️ TRANSACTIONAL	: Aguarda as transações atuais serem concluídas, mas não permite novas transações.
+▶️ O shutdown immediate é o mais utilizado.
+💀 O shutdown abort só é utilizado em casos extremos, pode corromper o banco.
+▶️ O shutdown transaction e normal, raramente são utilizados (evite)
+
+
+=================================================================
+== 🎯 Comandos via sqlplus
+=================================================================
+SQL> startup open; -- também funciona com apenas startup;
+SQL> shutdown immediate;
+SQL> startup;
+SQL> shutdown transactional;
+SQL> startup nomount;
+SQL> shutdown abort;
+SQL> startup mount;
+SQL> shutdown immediate;
+SQL> startup open read only;
+SQL> shutdown immediate;
+SQL> startup mount exclusive restrict; -- Drop database
+
+
+=================================================================
+== 🎯 Alterando o status da instância
+=================================================================
+SQL> shutdown immediate;
+SQL> startup nomount;
+SQL> alter database mount;
+SQL> alter database open;
+
+=================================================================
+== Monitoramento em Tempo Real do Alert Log do Oracle
+=================================================================
+
+SQL> show parameter diag;
+
+# cd /u01/app/oracle/diag/rdbms/cdb1/cdb1/trace
+# tail -f alert_cdb1.log
+
+====================================================================
+== 🎯 Comandos via srvctl (user grid)
+====================================================================
+
+-- realizando operações no banco (em todas as instâncias)
+$ srvctl status database -d rac
+$ srvctl status database -d rac -v
+$ srvctl stop database -d rac -o immediate
+$ srvctl status database -d rac
+$ srvctl start database -d rac
+$ srvctl status database -d rac
+$ srvctl stop database -d rac -o transactional
+$ srvctl status database -d rac
+
+
+-- realizando operações individualmente em cada instancia
+$ srvctl stop instance -d rac -i rac1
+$ srvctl start instance -d rac -i rac1
+$ srvctl status database -d rac
+$ srvctl start instance -d rac -i rac2
+$ srvctl status database -d rac
+$ srvctl stop instance -d rac -i rac2
+$ srvctl start instance -d rac -i rac2
+$ srvctl status database -d rac -v
+
+========================================================================================
+== 🎯 Conclusão
+========================================================================================
+💡 É fundamental entender os estágios de startup e shutdown do banco
+💡 Domine o processo de shutdown e startup
+💡 Pratique os comandos acima, mas não copie e cole
+⚠️ Evite de todas as maneiras o uso do shutdown abort

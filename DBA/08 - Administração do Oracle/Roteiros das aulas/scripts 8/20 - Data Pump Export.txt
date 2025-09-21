@@ -1,0 +1,258 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Data Pump Export																  |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/sutil/oracle-data-pump-overview.html#GUID-17FAE261-0972-4220-A2E4-44D479F519D4
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender o que é e como usar o Data Pump Export
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 O Data Pump no dia a dia do DBA
+📍 Principais utilidades
+📍 O que é o Data Pump Export
+📍 Modos de exportação de dados
+📍 Localização dos Dump Files
+📍 Privilégios para utilizar o Data Pump Export
+📍 Criando um directory no Banco de dados
+📍 A estrutura básica do comando expdp
+📍 Export Full
+📍 Export de um schema
+📍 Export de tabelas específicas
+📍 Export com paralelismo
+📍 Export com compress
+📍 Export com retro compatibilidade
+📍 Export de objetos específicos
+📍 Export excluindo objetos específicos
+📍 Export sem incluir as linhas
+📍 Usando o Data Pump export em ambientes multitenant
+📍 Usando o Data Pump export em ambientes Oracle RAC
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É uma tecnologia para mover dados de forma eficiente dentro ou entre bancos de dados Oracle
+▶️ Expdp e Impdp São os utilitários que formam o Oracle Data Pump
+	▫️ Expdp é utilizado para exportar dados --> lê do banco e grava no arquivo.
+	▫️ Impdp é usado para importar dados     --> lê do arquivo e grava no banco. 
+
+
+=================================================================
+== 🎯 O Data Pump no dia a dia do DBA
+=================================================================
+▶️ Você precisa dominar o uso do Data Pump, fará parte do seu dia a dia
+▶️ Haverão muitos pedidos de replicação de dados
+▶️ Saiba utilizar os seus principais recursos
+▶️ Treine bastante que você terá segurança para usar em produção
+
+
+=================================================================
+== 🎯 Principais utilidades
+=================================================================
+▶️ Replicar dados entre plataformas diferentes
+▶️ Replicar dados entre versões diferentes
+▶️ Replicar dados de forma parcial
+▶️ Migração de versão (para bases simples e pequenas)
+
+
+=================================================================
+== 🎯 O que é o Data Pump Export
+=================================================================
+▶️ O Data Pump Export é usado para copiar do banco, dados e metadados dentro de um ou mais arquivos no SO, chamados de "Dump Files"
+▶️ O Dump File contém:
+	▫️ Dados das tabelas
+	▫️ Metadados
+	▫️ Informações de controles
+▶️ Os arquivos do Data Pump são escritos num formato binário proprietário da Oracle
+▶️ Você pode importar o dump file usando o Data Pump Import
+▶️ Você pode invocar o Data Pump export através da linha de comando, através do comando "expdp" ou via API
+
+
+=================================================================
+== 🎯 Modos de exportação de dados
+=================================================================
+▶️ Você pode exportar os dados de 5 maneiras diferentes:
+	▫️ Full Mode (Eventualmente utilizado)
+	▫️ Schema Mode (Muito utilizado)
+	▫️ Table Mode (Muito utilizado)
+	▫️ Tablespace Mode (Raramente utilizado)
+	▫️ Transportable Tablespace Mode (Raramente utilizado)
+
+
+=================================================================
+== 🎯 Localização dos Dump Files
+=================================================================
+▶️ Para usar o Data Pump, você precisar criar um directory no banco
+💡 Directory é um objeto no banco, é diferente do diretório do SO. Uma coisa é uma coisa, outra coisa é outra coisa!
+▶️ Os arquivos são sempre gerados no servidor
+
+
+=================================================================
+== 🎯 Privilégios para utilizar o Data Pump Export
+=================================================================
+▶️ É preciso ter privilégios de exp_full_database ou sysdba para exportar os dados com o Data Pump
+
+
+=================================================================
+== 🎯 Criando um directory no Banco de dados
+=================================================================
+▶️ Você precisa de permissões CREATE ANY DIRECTORY no banco
+▶️ O usuário oracle precisa de permissões de leitura e gravação no diretório do S.O.
+▶️ Certifique-se que haja espaço no file system 
+
+
+$ mkdir /tmp/data_pump
+$ . oraenv
+
+SQL> create or replace directory dir_bkp as '/tmp/data_pump';
+
+
+=================================================================
+== 🎯 A estrutura básica do comando expdp
+=================================================================
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp dumpfile=soe.dmp logfile=soe.log schemas=SOE
+▶️ Quando você usa o expdp, por padrão você "sempre" precisa definir:
+   ▫️ A string de conexão
+   ▫️ O diretório
+   ▫️ O nome do dumpfile
+   ▫️ O nome do logfile
+   ▫️ O modo de exportação (Normalmente, full, schemas ou tables)
+▶️ Além desses parâmetros há uma infinidade de outros
+
+$ expdp help=y
+
+=================================================================
+== 🎯 Export Full
+=================================================================
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp dumpfile=orcl_full.dmp logfile=orcl_full.log FULL=Y
+$ ls -lhtr /tmp/data_pump/
+
+⚠️ Caso o export full seja executado em um container root, ele não vai incluir no dump os PDBS
+
+=================================================================
+== 🎯 Export de um schema
+=================================================================
+$ export ORACLE_SID=ORCL
+$ expdp system@orcl directory=dir_bkp  dumpfile=SOE.dmp logfile=SOE.log schemas=SOE
+
+
+=================================================================
+== 🎯 Export de tabelas específicas
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1" directory=dir_bkp dumpfile=WAREHOUSES.dmp logfile=WAREHOUSES.log tables=SOE.WAREHOUSES
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp dumpfile=tables.dmp logfile=tables.log tables=SOE.WAREHOUSES,SOE.CUSTOMERS
+
+
+=================================================================
+== 🎯 Export com paralelismo
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_PARALLEL.dmp logfile=SOE_PARALLEL.log schemas=SOE PARALLEL=2
+
+=================================================================
+== 🎯 Export com compress
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_COMPRESS.dmp logfile=SOE_COMPRESS.log schemas=SOE PARALLEL=2 COMPRESSION=ALL
+
+
+=================================================================
+== 🎯 Export com retro compatibilidade
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_12c.dmp logfile=SOE_12c.log schemas=SOE PARALLEL=2 version=12.2
+
+
+=================================================================
+== 🎯 Export de objetos específicos
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_INDEX.dmp logfile=SOE_INDEX.log schemas=SOE PARALLEL=2 INCLUDE=INDEX
+
+
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=muitos_obejtos.dmp logfile=muitos_obejtos.log schemas=SOE PARALLEL=2 INCLUDE=SEQUENCE,PACKAGE_SPEC,VIEW,CONSTRAINT,REF_CONSTRAINT
+
+
+
+💡 Parâmetros possíveis no include
+
+SQL> col OBJECT_PATH form a70
+SQL> col COMMENTS form a80
+SQL> set lines 1000
+SQL> select * From DATABASE_EXPORT_OBJECTS order by 1;
+
+💡 Você também pode consultar o log de exportação que dá dicas!
+
+
+=================================================================
+== 🎯 Export excluindo objetos específicos
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_EXCLUDE.dmp logfile=SOE_EXCLUDE.log schemas=SOE PARALLEL=2 EXCLUDE=TABLE
+
+
+=================================================================
+== 🎯 Export sem incluir as linhas
+=================================================================
+$ export ORACLE_SID=ORCL
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp  dumpfile=SOE_METADATA_ONLY.dmp logfile=SOE_METADATA_ONLY.log schemas=SOE PARALLEL=2 CONTENT=METADATA_ONLY
+
+
+=================================================================
+== 🎯 Usando o Data Pump export em ambientes multitenant
+=================================================================
+💡 Não muda nada. As mesmas variáveis que você exporta para se conectar via sqlplus, você usa para gerar o datapump export
+💡 Só fique atento as variáveis e ao usuário
+
+$ export ORACLE_SID=cdb1
+$ export ORACLE_PDB_SID=pdb1
+$ sqlplus / as sysdba
+SQL> create or replace directory dir_bkp as '/tmp/data_pump';
+SQL> exit
+
+$ expdp system/"Wellcome1" directory=dir_bkp dumpfile=pdb_full.dmp logfile=pdb_full.log FULL=Y CONTENT=METADATA_ONLY
+
+
+=================================================================
+== 🎯 Usando o Data Pump export em ambientes Oracle RAC
+=================================================================
+💡 Você também precisa se preocupar em exportar as variáveis que você exporta para se conectar via sqlplus 
+💡 Só fique atento que o nome da instância não é o nome do database
+⚠️ Quando você faz export em RAC com paralelismo, ele vai criar processos em todas as instâncias
+⚠️ Neste caso, o servidor precisaria ter um file system "clusterizado"
+⚠️ Caso não tenha, use o parâmetro CLUSTER=N
+
+
+$ export ORACLE_SID=rac1
+$ export ORACLE_PDB_SID=pdb1
+$ sqlplus / as sysdba
+SQL> create or replace directory dir_bkp as '/tmp/data_pump';
+SQL> exit
+
+$ expdp system/"Wellcome1" directory=dir_bkp dumpfile=pdb_full.dmp logfile=pdb_full.log FULL=Y CLUSTER=N
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Um DBA precisa dominar o Data Pump
+💡 É uma atividade muito corriqueira mover dados, você precisar saber fazer com facilidade
+💡 Pratique a exaustão as lições dessa aula
+💡 Abordei os parâmetros mais utilizados, mas não abordei todos
+💡 Tente escrever os comandos para fixar, não copie e cole
+💡 Mas não se preocupe em decorar tudo, salve na sua pasta de howto como usar o datapump
+ 

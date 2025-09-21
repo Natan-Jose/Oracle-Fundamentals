@@ -1,0 +1,216 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Move de segemntos 												|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/managing-tables.html#GUID-D4AE1CF2-08F7-4AB2-9317-0DE20AC70D44
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a realizar o move dos segmentos com segurança
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Quais os principais motivos de fazermos a manutenção de segmentos
+📍 Criando o Ambiente de Teste
+📍 Explicação dos Parâmetros do MOVE TABLE
+📍 Verificação do tamamnho da tabela
+📍 Verificando o plano da query
+📍 Execução do MOVE TABLE
+📍 Testando Índice Após MOVE
+📍 Rebuild do Índice
+📍 Execução do MOVE TABLE com UPDATE INDEXES
+📍 Execução do MOVE TABLE com PARALLEL
+📍 Execução do MOVE TABLE online
+📍 Execução do MOVE TABLE com compress
+📍 Tudo em um
+📍 Cuidados ao Realizar o MOVE TABLE
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É uma atividade típica do DBA mover segmentos no banco de dados
+▶️ Não é uma atividade complexa, mas requer cuidados, principalmente em bancos grandes e de alto volume de acesso
+
+
+=================================================================
+== 🎯 Quais os principais motivos de fazermos a manutenção de segmentos
+=================================================================
+▶️ Organização
+	▫️ Organizar segmentos em tablespaces específicas
+▶️ Desempenho
+	▫️ Degradação de performance devido a fragmentação dos segmentos 
+▶️ Gerenciamento de espaço
+	▫️ Compactação dos segmentos
+
+
+=================================================================
+== 🎯 Criando o Ambiente de Teste
+=================================================================
+SQL> CREATE TABLESPACE new_tablespace;
+SQL> create user teste_move identified by teste_move default tablespace new_tablespace;
+SQL> alter user teste_move quota unlimited on users;
+SQL> alter user teste_move quota unlimited on new_tablespace;
+SQL> grant create session, resource to teste_move;
+SQL> conn teste_move/teste_move
+
+SQL> CREATE TABLE emp_test (
+    employee_id NUMBER(6),
+    first_name VARCHAR2(20),
+    last_name VARCHAR2(25) CONSTRAINT emp_last_name_nn NOT NULL,
+    email VARCHAR2(25) CONSTRAINT emp_email_nn NOT NULL,
+    phone_number VARCHAR2(20),
+    hire_date DATE CONSTRAINT emp_hire_date_nn NOT NULL,
+    job_id VARCHAR2(10) CONSTRAINT emp_job_nn NOT NULL,
+    salary NUMBER(8,2),
+    commission_pct NUMBER(2,2),
+    manager_id NUMBER(6),
+    department_id NUMBER(4)
+);
+
+SQL> BEGIN
+    FOR i IN 1..900000 LOOP
+        INSERT INTO emp_test (employee_id, first_name, last_name, email, phone_number, hire_date, job_id, salary, commission_pct, manager_id, department_id)
+        VALUES (i, 'Name'||i, 'Surname'||i, 'email'||i||'@example.com', '1234567890', SYSDATE, 'IT_PROG', 5000 + dbms_random.value(0, 2000), dbms_random.value(0, 0.1), 100, 10);
+    END LOOP;
+    COMMIT;
+END;
+/
+
+SQL> CREATE INDEX emp_test_idx01 ON emp_test(last_name);
+SQL> CREATE INDEX emp_test_idx02 ON emp_test(first_name);
+SQL> CREATE INDEX emp_test_idx03 ON emp_test(employee_id);
+SQL> CREATE INDEX emp_test_idx04 ON emp_test(email);
+
+
+=================================================================
+== 🎯 Explicação dos Parâmetros do MOVE TABLE & REBUILD
+=================================================================
+✅ TABLESPACE		: Especifica uma tablespace para o qual a tabela será movida.
+✅ ONLINE			: Permite que a tabela continue online durante a operação (EE)
+✅ PARALLEL 			: Utiliza processamento paralelo para acelerar a operação (EE)
+✅ UPDATE INDEXES	: Atualiza os índices automaticamente após o move da tabela
+✅ NOLOGGING/LOGGING	: Gera o mínimo de redo (🧨)
+✅ COMPRESS          : Aplica compressão (EE)
+
+
+=================================================================
+== 🎯 Verificação do tamamnho da tabela
+=================================================================
+SQL> set lines 200
+SQL> set timing on
+SQL> col segment_name form a20
+SQL> col tablespace_name form a20
+SQL> SELECT segment_name, bytes/1024/1024 AS size_MB, tablespace_name 
+FROM user_segments 
+WHERE segment_name = 'EMP_TEST';
+
+
+=================================================================
+== 🎯 Verificando o plano da query
+=================================================================
+SQL> SET AUTOTRACE ON
+SQL> SELECT * FROM emp_test WHERE last_name = 'Surname5000';
+SQL> SET AUTOTRACE OFF
+
+
+=================================================================
+== 🎯 Execução do MOVE TABLE
+=================================================================
+SQL> ALTER TABLE emp_test MOVE;
+
+
+=================================================================
+== 🎯 Testando Índice Após MOVE
+=================================================================
+SQL> col index_name format a20
+SQL> col status format a10
+SQL> SELECT index_name, status FROM dba_indexes WHERE table_name = 'EMP_TEST';
+-- O índice emp_test_idx deverá aparecer como 'UNUSABLE'
+
+-- Tentando usar o índice emp_test_idx
+SQL> SET AUTOTRACE ON
+SQL> SELECT * FROM emp_test WHERE last_name = 'Surname5000';
+SQL> SET AUTOTRACE OFF
+
+
+=================================================================
+== 🎯 Rebuild do Índice
+=================================================================
+SQL> ALTER INDEX emp_test_idx01 REBUILD ONLINE;
+SQL> ALTER INDEX emp_test_idx02 REBUILD ONLINE;
+SQL> ALTER INDEX emp_test_idx03 REBUILD ONLINE;
+SQL> ALTER INDEX emp_test_idx04 REBUILD ONLINE;
+
+=================================================================
+== 🎯 Execução do MOVE TABLE com UPDATE INDEXES
+=================================================================
+SQL> ALTER TABLE emp_test MOVE;
+SQL> ALTER TABLE emp_test MOVE TABLESPACE new_tablespace UPDATE INDEXES ONLINE ;
+
+-- Verificando o estado do índice após o MOVE com UPDATE INDEXES
+SQL> SELECT index_name, status FROM user_indexes WHERE table_name = 'EMP_TEST';
+
+
+
+
+=================================================================
+== 🎯 Execução do MOVE TABLE com PARALLEL
+=================================================================
+SQL> ALTER TABLE emp_test MOVE UPDATE INDEXES ONLINE PARALLEL 8;
+
+
+=================================================================
+== 🎯 Execução do MOVE TABLE online
+=================================================================
+SQL> ALTER TABLE emp_test MOVE TABLESPACE users  ONLINE ;
+
+
+=================================================================
+== 🎯 Execução do MOVE TABLE com compress
+=================================================================
+SQL> SELECT segment_name, bytes/1024/1024 AS size_MB, tablespace_name 
+FROM dba_segments 
+WHERE owner = 'TESTE_MOVE';
+
+
+SQL> ALTER TABLE emp_test MOVE TABLESPACE new_tablespace COMPRESS  ;
+
+
+=================================================================
+== 🎯 Tudo em um
+=================================================================
+SQL> ALTER TABLE emp_test MOVE TABLESPACE new_tablespace COMPRESS FOR OLTP ONLINE PARALLEL 4 UPDATE INDEXES;
+
+
+SQL> ALTER TABLE emp_test MOVE TABLESPACE teste NOCOMPRESS  ;
+
+
+
+=================================================================
+== 🎯 Cuidados ao Realizar o MOVE TABLE
+=================================================================
+⚠️ Atenção para a geração de archives no servidor (espaço em disco, FRA)
+⚠️ Cuidado redobrado ao fazer move de tabelas grandes
+⚠️ Avalie o espaço livre nas tablespaces antes de realizar a manutenção
+⚠️ Faça dentro de uma janela de manutenção
+⚠️ Apesar de ser online (quando no EE), tem alto impacto na performance
+⚠️ Se possível, valide em um ambiente de testes
+⚠️ Monitore a operação
+ 
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+▶️ Mover segmentos, principalmente por questões de fragmentação ou de organização são questões típicas de um DBA
+▶️ Faça sempre com segurança
+▶️ É fácil, mas requer cautela

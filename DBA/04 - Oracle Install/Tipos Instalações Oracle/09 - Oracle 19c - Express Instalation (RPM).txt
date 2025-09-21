@@ -1,0 +1,74 @@
+========================================================================================
+== Oracle 19c Install "Express" (RPM)
+== Marcio Mandarino
+== marcio@mrdba.com.br
+== www.mrdba.com.br
+== https://www.linkedin.com/in/marciomandarino/
+== https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/installing-oracle-database-using-rpm-packages.html#GUID-5AF74AC1-510E-4EB0-9BCA-B096C42C6A76
+========================================================================================
+
+
+========================================================================================
+== Resumo da aula
+========================================================================================
+01. Instalar o Oracle
+02. Criar o banco de dados 
+
+========================================================================================
+== Verificar arquivo host (nome da máquina e IP)
+========================================================================================
+# echo "192.168.68.111   srvdbora01 srvdbora01.localdomain" >> /etc/hosts 
+
+========================================================================================
+== Desabilitar SELINUX
+========================================================================================
+# sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+
+
+========================================================================================
+== Desabilitar Firewall
+========================================================================================
+# systemctl stop firewalld
+# systemctl disable firewalld
+
+
+
+========================================================================================
+== Instalação do Oracle pre install
+========================================================================================
+# dnf install -y oracle-database-preinstall-19c
+
+
+========================================================================================
+== Instalando o pacote RPM
+========================================================================================
+# export CV_ASSUME_DISTID=OEL7.6
+# dnf -y localinstall /tmp/ora_install/oracle-database-ee-19c-1.0-1.x86_64.rpm
+
+
+====================================================================
+== Criação do Database (CDB)
+========================================================================================
+# (echo "Wellcome1"; echo "Wellcome1";) | /etc/init.d/oracledb_ORCLCDB-19c configure
+
+========================================================================================
+== Processo de Configuração do Banco de Dados Oracle
+========================================================================================
+
+# 1. Verificar os processos Oracle ativos no servidor
+ps -ef | grep pmon
+
+# 2. Configurar o ambiente Oracle (caso necessário)
+. oraenv
+
+# 3. Listar as variáveis de ambiente Oracle configuradas
+env | grep ORA
+
+# 4. Verificar a variável PATH para confirmar os binários do Oracle no caminho
+echo $PATH
+
+# 5. Conferir o conteúdo do arquivo /etc/oratab (mapeamento de instâncias Oracle no servidor)
+cat /etc/oratab
+
+# 6. Consultar os datafiles do banco Oracle a partir do SQL*Plus (no banco conectado)
+select name from v$datafile;

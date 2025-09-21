@@ -1,0 +1,99 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Copiando manualmente Objetos										                  |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_METADATA.html#GUID-F5238363-CC40-47F7-8973-05BD95030231
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender como copiar objetos do banco de dados de forma manual e individual
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 O Pacote DBMS_METADATA.GET_DDL
+📍 Cenário 1
+📍 Script para sua caixa de ferramentas
+📍 Boas práticas
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ No dia a dia, é muito comum o DBA estar copiando objetos do banco "de um lado para o outro"
+▶️ Também é comum receber solicitações do time de Dev pedindo o "DDL" de um determinado objeto do banco
+▶️ Quando precisamos fazer essa atividade para um ou poucos objetos, normalmente é feito de forma "manual" 
+▶️ Existem várias formas de se pegar o DDL de um objeto do banco, por exemplo:
+	▫️ Sql Developer
+	▫️ SqlCl
+	▫️ Pacote DBMS_METADATA.GET_DDL
+💡 Na prática, todas as ferramentas usam o pacote DBMS_METADATA.GET_DDL
+
+=================================================================
+== 🎯 O Pacote DBMS_METADATA.GET_DDL
+=================================================================
+SQL> select
+     dbms_metadata.get_ddl('TABLE',TABLE_NAME,'SOE')
+    FROM DBA_TABLES WHERE OWNER = 'SOE' AND TABLE_NAME = 'ADDRESSES';
+
+=================================================================
+== 🎯 Cenário 1
+=================================================================
+Solicitação: Copiar a tabela LOGON do usuário SOE do ambiente de produção para o ambiente de desenvolvimento
+
+-- Criar usuário no ambiente de DEV
+SQL> create user soe identified by soe;
+SQL> alter user  soe quota unlimited on soe;
+SQL> grant create session, create table, create database link to soe;
+
+
+-- Criar database link no ambiente de DEV apontando para a base de produção
+SQL> CREATE DATABASE LINK dblk_srvprd01_soe
+CONNECT TO soe IDENTIFIED BY "SOE"
+USING '(DESCRIPTION =
+  (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.68.112)(PORT = 1521))
+  (CONNECT_DATA = (SERVICE_NAME = orcl)))';
+
+
+CREATE DATABASE LINK dblk_srvprd01_soe2
+CONNECT TO soe IDENTIFIED BY "SOE"
+USING 'ORCL';
+
+
+select count(1) from "SOE"."LOGON"@DBLK_SRVPRD01_SOE
+
+SQL> insert into "SOE"."LOGON" (select * from "SOE"."LOGON"@DBLK_SRVPRD01_SOE);
+SQL> commit;
+SQL> ALTER SESSION CLOSE DATABASE LINK dblk_srvprd01_soe;
+SQL> drop DATABASE LINK dblk_srvprd01_soe;
+
+
+
+=================================================================
+== 🎯 Script para sua caixa de ferramentas
+=================================================================
+@ddl
+
+=================================================================
+== 🎯 Boas práticas
+=================================================================
+💡 Ao enviar o DDL de um objeto, evite enviar as configurações de storage
+💡 Quando alguém pedir o DDL de uma tabela, procure entender se ele também quer o DDL dos objetos associados (triggers, indexes, constraints)
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Você tem que ser esperto nessa atividade, pois ela é básica para um DBA
+💡 Pratique as atividades dessa aula, copie objetos usando todos os recursos
+💡 Salve os scripts utilizados nessa aula na sua pasta de scripts
+💡 Domine os scripts utilizados nessa aula!

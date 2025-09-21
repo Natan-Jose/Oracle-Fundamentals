@@ -1,0 +1,126 @@
+|--------------------------------------------------------------------------------|
+| Aula      : Crosscheck e delete backup                                         |
+| Módulo    : Basic Backup and Recovery                                          |
+| Curso     : Oracle Fundamentals                                                |
+| Instrutor : Marcio Mandarino                                                   |
+| URL       : mrdba.com.br/oracle_fundamentals                                   |
+|--------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/maintaining-rman-backups.html
+|--------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a fazer a manutenção dos arquivos de backup do servidor
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Crosscheck backup
+📍 Delete backup
+📍 Cenário prático
+📍 Fazendo tudo de uma vez
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito Geral
+=================================================================
+▶️ Quando configuramos bem a rotina de backup do RMAN, não precisamos ficar lidando com arquivos de backup
+▶️ Executamos processos que vão por em prática aquilo que configuramos previamente
+
+
+=================================================================
+== 🎯 Crosscheck backup
+=================================================================
+▶️ O crosscheck faz o sincronismo da realidade física com o que está no catálogo do RMAN
+▶️ Essa é uma atividade de manutenção dos backups muito importante de ser realizada
+▶️ O crosscheck não exclui arquivos de backup, ele apenas "marca" os arquivos de backup, definindo seu status
+▶️ O que vai determinar o status dos arquivos de backup é a política de retenção do backup
+▶️ Um arquivo pode ter os seguintes status:
+  ▫️ AVAILABLE: Disponível e faz parte da política de backup
+  ▫️ OBSOLETE: São arquivos que estão disponíveis, porém não são mais necessários para a política de backup atual
+  ▫️ EXPIRED: São arquivos de backup que não foram encontrados (provavelmente, excluídos manualmente)
+
+
+=================================================================
+== 🎯 Delete backup
+=================================================================
+▶️ O delete backup faz a exclusão de backups
+▶️ Normalmente é utilizado para excluir backups obsoletos e/ou expirados
+▶️ Mas também pode ser utilizado para excluir backups específicos
+
+
+RMAN> backup database plus archivelog tag 'excluir';
+RMAN> delete noprompt backupset tag 'excluir';
+
+
+=================================================================
+== 🎯 Cenário prático
+=================================================================
+▶️ Definir a política de retenção para 1 backup em disco
+$ . oraenv  
+$ rman target / 
+rman> configure retention policy to redundancy 1;
+RMAN> configure archivelog deletion policy to backed up 1 times to device type disk;
+
+RMAN> backup as compressed backupset tag 'bkp1' database plus archivelog tag 'bkp1';
+RMAN> backup as compressed backupset tag 'bkp2' database plus archivelog tag 'bkp2';
+RMAN> backup as compressed backupset tag 'bkp3' database plus archivelog tag 'bkp3';
+RMAN> list backup tag 'bkp1';
+RMAN> list backup tag 'bkp2';
+RMAN> list backup tag 'bkp3';
+
+-- Abrir uma nova sessão e excluir os arquivos de backup do bkp1
+# rm -rf /backup/ORCL/backupset/2024_07_08/*BKP1*
+
+
+
+-- Voltar para a sessão anterior
+RMAN> list backup tag 'bkp1';
+
+-- Executar o crosscheck
+RMAN> run
+{
+  crosscheck backup;
+  crosscheck archivelog all;
+}
+
+RMAN> report obsolete;
+
+
+RMAN> delete noprompt expired backup;
+RMAN> delete noprompt expired archivelog all;
+RMAN> delete noprompt obsolete;
+
+RMAN> list backup tag 'bkp1';
+RMAN> list backup tag 'bkp2';
+RMAN> list backup tag 'bkp3';
+
+
+=================================================================
+== 🎯 Fazendo tudo de uma vez
+=================================================================
+RMAN> run
+{
+  crosscheck backup;
+  crosscheck archivelog all;
+  delete noprompt expired backup;
+  delete noprompt expired archivelog all;
+  delete noprompt obsolete;
+  report need backup;
+}
+
+5 dias
+
+apagando arquivos com de 5 dias
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 O DBA não fica apagando arquivos de backup, ele controla a política usando o crosscheck e delete
+💡 Pratique a execução dos comandos desta aula
+💡 Tente escrever os comandos para fixar, não copie e cole
+ 

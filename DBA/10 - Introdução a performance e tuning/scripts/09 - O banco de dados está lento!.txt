@@ -1,0 +1,199 @@
+|-------------------------------------------------------------------------------|
+| Aula      : O banco de dados está lento!										|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Saber fazer um troubleshooting de performance no Oracle
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Questões importantes
+📍 Arsenal de ferramentas
+📍 Análise Top Down
+📍 Executar uma carga
+📍 Análise de SO
+📍 Análise Real Time do Dabase (oratop)
+📍 Waits do banco
+📍 Capturando o SQL 
+📍 Analisando o SQL
+📍 Recomendações
+📍 Colete todas as informações e gere uma resposta
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Nem sempre o problema é no banco (na maioria das vezes não é)
+▶️ O usuário reporta lentidão no sistema, mas o problema pode estar em vários lugares
+	▫️ https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/img/tdppt001.gif
+▶️ Porém, temos que provar que o problema não está no banco
+▶️ Ou chegarmos a conclusão que o problema está no banco
+▶️ Uma coisa é o problema estar no banco, outra coisa é o problema ser o banco
+
+=================================================================
+== 🎯 Questões importantes
+=================================================================
+▶️ Fazer um levantamento básico com quem reportou o problema
+▶️ Esse levantamento vai definir o "horizonte" da sua análise
+	▫️ A lentidão ainda está ocorrendo ou já passou? 
+	▫️ Se passou, quando terminou? Quando começou?
+	▫️ Qual a percepção de lentidão? Geral ou em alguns processos específicos? 
+
+
+=================================================================
+== 🎯 Arsenal de ferramentas
+=================================================================
+▶️ Já temos ferramentas o suficiente para identificar um problema de performance
+	▫️ comando top do linux
+	▫️ comando oratop do Oracle
+	▫️ Scripts personalizados
+		💡 @quem
+		💡 @quem2
+		💡 @s
+		💡 @aas 
+		💡 @ash
+		💡 ash2
+		💡 ash3
+		💡 @sql_id
+		💡 @adv_sql
+		💡 @addm
+		💡 @addm_detail
+		💡 @addm_report
+	▫️ AWR
+	▫️ ADDM	
+	▫️ Ferramentas adicionais fornecidas pela empresa	
+
+
+=================================================================
+== 🎯 Análise Top Down
+=================================================================
+▶️ Comece analisar de "Cima para baixo"
+▶️ Veja os aspectos básicos de SO: CPU, memória, swap, etc.
+▶️ Analise as esperas do banco
+	▫️ AAS
+	▫️ Wait Class
+ 	▫️ Events
+▶️ Identifique os sql_ids mais ofensores do ambiente
+▶️ Identifique de onde está gerando a alta carga
+	▫️ Top users
+	▫️ Top Programs
+	▫️ Top Machines
+▶️ Report os problemas identificados
+
+
+=================================================================
+== 🎯 Executar uma carga
+=================================================================
+-- Sessão 1: Rodar o swingbench como root
+# cd /u01/swingbenchlatest/swingbench/bin/
+# ./charbench -uc 10 -cs //localhost/orcl -c ../configs/SOE_Server_Side_V2.xml -u SOE -p SOE -parallel 2
+
+
+=================================================================
+== 🎯 Análise de SO
+=================================================================
+$ top
+$ free -m
+
+=================================================================
+== 🎯 Análise Real Time do Dabase (oratop)
+=================================================================
+$ cd $ORACLE_HOME/suptools/oratop/
+$ ./oratop -rf / as sysdba
+
+
+=================================================================
+== 🎯 Waits do banco
+=================================================================
+SQL> @aas 15
+SQL> @ash 15
+
+=================================================================
+== 🎯 Capturando o SQL 
+=================================================================
+SQL> @ash3 sql_id session_type='FOREGROUND' 3
+
+SQL> @ash3 machine "sql_id='f7rxuxzt64k87'" 4
+SQL> @ash3 program "sql_id='f7rxuxzt64k87'" 4
+SQL> @ash3 username "sql_id='f7rxuxzt64k87'" 4
+
+=================================================================
+== 🎯 Analisando o SQL 
+=================================================================
+SQL> @sql_id f7rxuxzt64k87
+SQL> @adv_sql f7rxuxzt64k87
+
+
+=================================================================
+== 🎯 Recomendações 
+=================================================================
+SQL> EXECUTE DBMS_WORKLOAD_REPOSITORY.CREATE_SNAPSHOT;
+SQL> @addm_report
+
+
+=================================================================
+== 🎯 Colete todas as informações e gere uma resposta
+=================================================================
+Ex. 
+
+Durante o período de análise idenficadas as seguintes questões:
+- Um alto volume de load no banco de dados a partir de 2024-07-04 11:40:28
+- O usuário SOE foi responsável por 77% do load do banco no período.
+- Os maiores eventos de espera no banco foram: 
+
+EVENT                          TOTAL_WAIT_TIME %This
+------------------------------ --------------- --------------------
+ON CPU                                    3138   30%
+log file sync                             1777   17%
+db file sequential read                   1388   13%
+free buffer waits                          949    9%
+db file async I/O submit                   872    8%
+
+- A query c13sma6rkr27c foi responsável pelo maior load do banco (15% do load do período)
+SQL_ID c13sma6rkr27c
+--------------------
+SELECT PRODUCTS.PRODUCT_ID, PRODUCT_NAME, PRODUCT_DESCRIPTION,
+CATEGORY_ID, WEIGHT_CLASS, WARRANTY_PERIOD, SUPPLIER_ID,
+PRODUCT_STATUS, LIST_PRICE, MIN_PRICE, CATALOG_URL, QUANTITY_ON_HAND
+FROM PRODUCTS, INVENTORIES WHERE PRODUCTS.CATEGORY_ID = :B3 AND
+INVENTORIES.PRODUCT_ID = PRODUCTS.PRODUCT_ID AND
+INVENTORIES.WAREHOUSE_ID = :B2 AND ROWNUM < :B1
+
+Plan hash value: 3615835943
+
+-------------------------------------------------------------------------------------------------------
+| Id  | Operation                      | Name                 | Rows  | Bytes | Cost (%CPU)| Time     |
+-------------------------------------------------------------------------------------------------------
+|   0 | SELECT STATEMENT               |                      |       |       |    40 (100)|          |
+|   1 |  COUNT STOPKEY                 |                      |       |       |            |          |
+|   2 |   HASH JOIN OUTER              |                      |    10 |  4100 |    40   (0)| 00:00:01 |
+|   3 |    NESTED LOOPS                |                      |    10 |  1930 |    29   (0)| 00:00:01 |
+|   4 |     NESTED LOOPS               |                      |    10 |  1930 |    29   (0)| 00:00:01 |
+|   5 |      TABLE ACCESS FULL         | PRODUCT_INFORMATION  |    10 |  1790 |     9   (0)| 00:00:01 |
+|   6 |      INDEX UNIQUE SCAN         | INVENTORY_PK         |     1 |       |     1   (0)| 00:00:01 |
+|   7 |     TABLE ACCESS BY INDEX ROWID| INVENTORIES          |     1 |    14 |     2   (0)| 00:00:01 |
+|   8 |    TABLE ACCESS FULL           | PRODUCT_DESCRIPTIONS |  1000 |   211K|    11   (0)| 00:00:01 |
+-------------------------------------------------------------------------------------------------------
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 A prática leva a perfeição
+💡 Essa é uma boa análise, porém com o tempo você vai melhorá-la
+💡 Sempre que possível, forneça recomendações
+💡 Repita os exercícios dessa aula
+💡 Tenha domínio sobre os scripts apresentados nesse módulo, eles serão sua caixa de ferramentas!
+ 

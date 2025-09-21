@@ -1,0 +1,194 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Database Statistics												|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/oracle-database-performance-method.html#GUID-8DEA5079-6AAB-47D8-857A-9B5301843290
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender a base de como se analisar a performance do Oracle
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Database Time
+📍 User Response Time
+📍 Wait Event Statistics
+📍 Exemplo prático 1
+📍 Exemplo prático 2
+📍 Sripts úteis
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Time model statistics é o tempo gasto pelo banco de dados para realizar um tipo de atividade
+▶️ A estatística mais importante é o Database Time (DB Time)
+
+
+=================================================================
+== 🎯 Database Time
+=================================================================
+▶️ DB Time representa o tempo total gasto pelo banco de dados em execuções de processos de Foreground (Processos do usuário)
+▶️ O DB Time é um indicador do total do workload do banco de dados
+	▫️ DB time considera apenas o tempo gasto por processos do usuário
+▶️ O CPU time representa a soma do tempo de execução para cada requisição no banco de dados
+▶️ O Wait Time é a soma de todas as atividades de espera da instância por recursos
+
+https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/img/tdppt001.gif
+
+
+
+
+
+=================================================================
+== 🎯 User Response Time
+=================================================================
+▶️ Uma sessão é uma entidade lógica na memória da instância que representa o estado de um login de usuário no database
+▶️ O Database time é calculado somando o tempo de CPU e os tempos de espera para todas as sessões ativas (que não estão em Idle)
+
+https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/img/tdppt003.gif
+
+
+=================================================================
+== 🎯 Wait Event Statistics
+=================================================================
+▶️ Wait Events são incrementados por uma sessão indicando que essa sessão precisou esperar por algum evento ser completado antes de continuar o processamento.
+▶️ Quando uma sessão aguarda o processamento de uma requisição do usuário, o database registra essas esperas em um conjunto de waits events predefinidos.
+▶️ Esses waits events são agrupados em Wait Class:
+	▫️ Administrative 
+	▫️ Application
+	▫️ Cluster
+	▫️ Commit
+	▫️ Concurrency
+	▫️ Configuration
+	▫️ Idle
+	▫️ Network
+	▫️ Other
+	▫️ Queueing
+	▫️ Scheduler
+	▫️ System I/O
+	▫️ User I/O
+
+
+=================================================================
+== 🎯 Exemplo prático 1
+=================================================================
+$ . oraenv
+ORACLE_SID = [orcl] ? orcl
+
+$ sqlplus / as sysdba
+
+SQL> drop TABLE random_data;
+
+SQL> CREATE TABLE random_data (
+    id NUMBER ,
+    random_value NUMBER
+);
+
+SQL> DECLARE
+v_start NUMBER := 1;
+v_end NUMBER := 2000000;
+v_random_value NUMBER;
+BEGIN
+DBMS_APPLICATION_INFO.set_action(action_name => 'test_load');
+FOR i IN v_start..v_end LOOP
+    v_random_value := DBMS_RANDOM.VALUE(1, 1000000);
+    INSERT INTO random_data (id, random_value) VALUES (i, v_random_value);
+    
+    -- Commit every 10,000 records to avoid too much undo data
+    IF MOD(i, 10000) = 0 THEN
+        COMMIT;
+    END IF;
+END LOOP;
+
+-- Final commit
+COMMIT;
+END;
+/
+
+-- Monitorar no Sql Developer
+SQL> SELECT
+    sid,
+    serial#,
+    username,
+    status,
+    osuser,
+    machine,
+    program,
+    type,
+    last_call_et,
+    event,
+    wait_class,
+    wait_time,
+    state
+FROM
+    v$session
+WHERE
+    action = 'test_load';    
+    
+
+SQL> SELECT
+    sample_time,
+    sql_id,
+    sql_opname,
+    sql_plan_hash_value,
+    sql_plan_operation,
+    sql_plan_options,
+    event,
+    wait_class,
+    wait_time,
+    session_state
+FROM
+    v$active_session_history
+        WHERE action = 'test_load' order by sample_time desc;
+
+=================================================================
+== 🎯 Exemplo prático 2
+=================================================================
+# cd /u01/swingbenchlatest/swingbench/bin/
+# ./charbench -uc 10 -cs //localhost/orcl -c ../configs/SOE_Server_Side_V2.xml -u SOE -p SOE -parallel 2
+
+
+
+SQL> SELECT
+    sample_time,
+    sql_id,
+    sql_opname,
+    sql_plan_hash_value,
+    sql_plan_operation,
+    sql_plan_options,
+    event,
+    wait_class,
+    wait_time,
+    session_state
+FROM
+    v$active_session_history
+        WHERE program = 'JDBC Thin Client' order by sample_time desc;
+
+
+=================================================================
+== 🎯 Sripts úteis
+=================================================================
+💡 @quem
+💡 @quem2
+💡 @s
+💡 @ash (New)
+💡 ash2 (New)
+💡 @sql_id (New)
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Compreender esses aspectos teóricos é estratégico para fazer tuning no banco
+
+ 

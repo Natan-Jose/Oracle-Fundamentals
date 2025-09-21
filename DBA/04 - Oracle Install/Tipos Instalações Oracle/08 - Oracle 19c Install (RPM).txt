@@ -1,0 +1,176 @@
+========================================================================================
+== Oracle 19c Install (RPM)
+== Marcio Mandarino
+== marcio@mrdba.com.br
+== www.mrdba.com.br
+== https://www.linkedin.com/in/marciomandarino/
+== https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/installing-oracle-database-using-rpm-packages.html#GUID-5AF74AC1-510E-4EB0-9BCA-B096C42C6A76
+========================================================================================
+
+
+========================================================================================
+== Resumo da aula
+========================================================================================
+
+
+01. Instalar o Oracle
+02. Criar o listener
+03. Criar o banco de dados 
+04. Validar instalação
+
+
+
+========================================================================================
+== Acessar como root
+========================================================================================
+# sudo su -
+
+
+========================================================================================
+== Verificar arquivo host (nome da máquina e IP)
+========================================================================================
+# echo "192.168.0.101   srvdb01 srvdb01.localdomain" >> /etc/hosts 
+
+
+
+
+========================================================================================
+== Desabilitar SELINUX
+========================================================================================
+# cat /etc/selinux/config | grep "SELINUX=enforcing"
+# sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/selinux/config
+# cat /etc/selinux/config | grep "SELINUX=disabled"
+
+
+========================================================================================
+== Desabilitar Firewall
+========================================================================================
+# systemctl stop firewalld
+# systemctl disable firewalld
+
+
+========================================================================================
+== Alterando o Time Zone
+========================================================================================
+# timedatectl
+# timedatectl set-timezone America/Sao_Paulo
+
+
+========================================================================================
+== Ajustes no ssh
+========================================================================================
+# sed -i 's/#X11UseLocalhost yes/X11UseLocalhost no/' /etc/ssh/sshd_config
+# sed -i 's/#TCPKeepAlive yes/TCPKeepAlive yes/' /etc/ssh/sshd_config
+
+# grep 'X11Forwarding\|X11UseLocalhost\|TCPKeepAlive' /etc/ssh/sshd_config
+
+# systemctl restart sshd.service
+
+
+========================================================================================
+== Instalar pacotes adicionais
+========================================================================================
+# dnf install -y mlocate net-tools glibc-all-langpacks langpacks-en  
+
+
+========================================================================================
+== Update dos pacotes do Sistema Operacional
+========================================================================================
+# dnf update -y
+
+
+========================================================================================
+== Reboot
+========================================================================================
+# reboot
+
+
+========================================================================================
+== Instalação do Oracle pre install
+========================================================================================
+# dnf install -y oracle-database-preinstall-19c
+
+
+========================================================================================
+== Ajuste da senha do usuário oracle
+========================================================================================
+# passwd oracle
+
+
+
+========================================================================================
+== Criar os diretórios da instalação
+========================================================================================
+# mkdir -p /oradata/ORCLCDB/
+# mkdir -p /redo1/ORCLCDB/
+# mkdir -p /redo2/ORCLCDB/
+# mkdir -p /home/oracle/scripts
+# chown -R oracle:oinstall /opt/ /oradata  /redo1  /redo2 /backup  /home/oracle/scripts
+# chmod -R 775 /opt/ /oradata  /redo1  /redo2 /backup  /home/oracle/scripts
+
+
+
+
+========================================================================================
+== Alterar o proprietário do instalador do oracle
+========================================================================================
+# chown -R oracle.oinstall /tmp/ora_install/
+
+
+========================================================================================
+== Configurando o bash_profile
+========================================================================================
+$ cat >> /home/oracle/.bash_profile <<EOF
+export ORACLE_SID=ORCLCDB
+export ORACLE_BASE=/opt/oracle
+export ORACLE_HOME=/opt/oracle/product/19c/dbhome_1
+export NLS_DATE_FORMAT="dd-mm-yyyy hh24:mi:ss"
+export ORACLE_HOSTNAME=`hostname`
+export ORA_INVENTORY=/opt/oraInventory
+export SQLPATH=/home/oracle/scripts/
+export DATA_DIR=/oradata/ORCLCDB/
+
+export PATH=\$ORACLE_HOME/bin:\$PATH
+EOF
+
+# cat /home/oracle/.bash_profile
+
+========================================================================================
+== Instalando o pacote RPM
+========================================================================================
+# export CV_ASSUME_DISTID=OEL7.6
+# dnf -y localinstall /tmp/ora_install/oracle-database-ee-19c-1.0-1.x86_64.rpm
+
+====================================================================
+== Ajuste do local da criação do banco de dados
+========================================================================================
+
+# cat /etc/sysconfig/oracledb_ORCLCDB-19c.conf
+
+# sed -i 's|ORACLE_DATA_LOCATION=/opt/oracle/oradata|ORACLE_DATA_LOCATION=/oradata|' /etc/sysconfig/oracledb_ORCLCDB-19c.conf
+
+
+
+# cat /etc/sysconfig/oracledb_ORCLCDB-19c.conf
+
+====================================================================
+== Criação do Database (CDB)
+========================================================================================
+# (echo "Wellcome1"; echo "Wellcome1";) | /etc/init.d/oracledb_ORCLCDB-19c configure
+
+
+========================================================================================
+== Verificando o banco criado
+========================================================================================
+$ sqlplus / as sysdba
+
+SQL> set lines 1200
+SQL> col INSTANCE_NAME form a20
+SQL> col HOST_NAME form a20
+SQL> col VERSION_FULL form a20
+SQL> col STATUS form a10
+SQL> col DATABASE_STATUS form a20
+SQL> col EDITION form a10
+
+SQL> select INSTANCE_NAME,HOST_NAME,VERSION_FULL,STARTUP_TIME,STATUS,LOGINS,DATABASE_STATUS,EDITION
+from v$instance;

@@ -1,0 +1,126 @@
+|-------------------------------------------------------------------------------|
+| Aula		: Dynamic Performance Views											|
+| Módulo	: Managing Oracle Database											|
+| Curso		: Oracle Fundamentals												|
+| Instrutor	: Marcio Mandarino													|
+| URL		: mrdba.com.br/oracle_fundamentals									|
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/23/refrn/about-dynamic-performance-views.html
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula
+=================================================================
+💡 Entender o que são as Dynamic Performance Views (V$) no Oracle.
+💡 Aprender a consultar as V$ para obter informações sobre o desempenho e operação do banco de dados.
+💡 Entender a diferença entre V$ e GV$ views
+💡 Conhecer algumas das V$ mais comuns e suas utilizações.
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Sobre Dynamic Performance Views
+📍 V$ views
+📍 GV$ views
+📍 V$ comuns
+📍 Exemplos práticos
+📍 A view dict
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ As Dynamic Performance Views (V$) são uma coleção de views no Oracle Database que fornecem informações sobre o desempenho, operação e configuração do banco de dados.
+▶️ São chamadas de "dinâmicas" porque as informações que elas contêm são atualizadas constantemente enquanto um banco de dados está em operação.
+▶️ Um bom DBA deve conhecer bem as Views do Oracle
+
+
+=================================================================
+== 🎯 Sobre Dynamic Performance Views
+=================================================================
+▶️ Oracle contém um conjunto de views que são mantidas pelo servidor de banco de dados e acessíveis aos usuários com devidas permissões.
+▶️ Essas views são atualizadas continuamente enquanto um banco de dados está aberto e em uso.
+▶️ Embora pareçam tabelas regulares do banco de dados, elas não são. Elas fornecem dados sobre estruturas internas de disco e memória.
+
+=================================================================
+== 🎯 V$ views
+=================================================================
+▶️ As verdadeiras DPVs são identificadas pelo prefixo V_$.
+▶️ Sinônimos públicos para essas views têm o prefixo V$.
+▶️ Administradores de banco de dados e outros usuários devem acessar apenas os objetos V$, não os objetos V_$.
+▶️ Depois que uma instância é iniciada, as views V$ que leem da memória são acessíveis. 
+▶️ Views que leem dados do disco requerem que o banco de dados seja montado e alguns requerem que o banco de dados esteja aberto.
+
+
+=================================================================
+== 📍 GV$ views
+=================================================================
+▶️ Para quase todas as views V$ descritas, o Oracle possui uma view GV$ correspondente.
+▶️ No Oracle RAC, consultar uma view GV$ recupera as informações da view V$ de todas as instâncias qualificadas.
+▶️ Cada view GV$ contém uma coluna extra chamada INST_ID de tipo de dados NUMBER. 
+	▫️ Esta coluna exibe o número da instância de onde as informações da view V$ foram obtidas.
+
+=================================================================
+== 🎯 V$ comuns
+=================================================================
+▶️ v$database		: Informações gerais sobre o banco de dados.
+▶️ v$instance		: Detalhes da instância do Oracle Database em execução.
+▶️ v$parameter		: Parâmetros de inicialização do banco de dados.
+▶️ v$version			: Informações de versão dos componentes do Oracle Database.
+▶️ v$tablespace		: Visão geral dos tablespaces no banco de dados.
+▶️ v$datafile		: Informações sobre os arquivos de dados.
+▶️ v$log				: Detalhes dos grupos de redo log online.
+▶️ v$logfile			: Informações sobre os arquivos de redo log.
+▶️ v$archived_log	: Informações sobre os redo logs que foram arquivados.
+▶️ v$lock			: Informações sobre bloqueios no banco de dados.
+▶️ v$session			: Detalhes das sessões ativas no banco de dados.
+▶️ v$process			: Informações sobre os processos associados à instância do Oracle.
+▶️ v$sql				: Detalhes sobre as instruções SQL que estão sendo executadas ou foram recentemente executadas BD.
+
+💡 Se você colocar no Google o nome da view mais a versão do Oracle, você vai acessar a documentação Database Reference
+
+=================================================================
+== 🎯 Exemplos práticos
+=================================================================
+
+set lines 800
+col instance_name form a20
+col host_name form a20
+col username form a20
+col program form a30
+col machine form a20
+col status form a20
+
+
+SQL> select name, open_Mode from v$database;
+
+SQL> select instance_name, host_name, status from v$instance;
+SQL> select inst_id,instance_name, host_name, status from gv$instance;
+
+SQL> select sid, serial#, username, program, machine, status from v$session;
+SQL> select inst_id,sid, serial#, username, program, machine, status from gv$session;
+
+
+=================================================================
+== 🎯 A view dict
+=================================================================
+💡 Esta view ajuda a encontrar as views do dicionário de dados
+
+SQL> desc dict
+Name                            Null?    Type
+------------------------------- -------- ----------------------------
+TABLE_NAME                               VARCHAR2(128)
+COMMENTS                                 VARCHAR2(4000)
+
+@dict
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Conhecer as Views dinâmicas do Oracle é estratégico para o DBA
+💡 Sua pasta de scripts deve possuir scripts para consultar essas views de forma rápida
+

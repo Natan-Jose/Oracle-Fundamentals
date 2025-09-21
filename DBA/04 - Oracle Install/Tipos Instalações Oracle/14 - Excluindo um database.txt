@@ -1,0 +1,81 @@
+Aula        : Excluindo um database
+Módulo      : Oracle Install
+Instrutor   : Marcio Mandarino
+URL         : https://docs.oracle.com/en/database/oracle/oracle-database/21/multi/dbca-command.html#GUID-F2BFDDC1-7656-4407-8A8F-2274BF3A9012
+
+=================================================================
+== Objetivos da Aula:
+=================================================================
+💡 Aprender meios de excluir um database e um PDB
+
+
+=================================================================
+== Agenda
+=================================================================
+✅ Visão Geral
+✅ Cuidados
+✅ Excluir um database GUI
+✅ Excluir um database slient mode
+✅ Verificando os bancos excluídos
+✅ Excluindo PDBs 
+✅ Exercícios
+
+ 
+=================================================================
+== Visão Geral
+=================================================================
+▶️ Eventualmente é necesário excluir databases e/ou PDBs
+▶️ Saiba como fazer de forma adequada
+
+=================================================================
+== Cuidados
+=================================================================
+⚠️ A exclusão é algo irreversível
+⚠️ Em uma empresa, faça backup antes de excluir
+⚠️ O maior cuidado que você precisa ter, é saber que está se conectando no lugar certo
+⚠️ Praticar é importante para ter domínio das atividades
+
+
+========================================================================================
+== Excluir um database GUI
+========================================================================================
+# dbca
+
+
+========================================================================================
+== Excluir um database slient mode
+========================================================================================
+$ ps -ef | grep pmon
+$ env | grep ORA
+$ dbca -silent -deleteDatabase -sourceDB NONCDB -forceArchiveLogDeletion -sysDBAPassword Wellcome1 -sysDBAUserName SYS
+
+
+========================================================================================
+== Verificando os bancos excluídos
+========================================================================================
+$ ps -ef | grep pmon
+$ cat /etc/oratab
+$ du -sh /u02/oradata/*
+
+
+========================================================================================
+== Excluindo PDBs
+========================================================================================
+$ export ORACLE_SID=ORCLCDB
+$ sqlplus / as sysdba
+
+SQL> alter pluggable database pdb2 close;
+SQL> drop pluggable database pdb2 including datafiles;
+
+
+========================================================================================
+== Exercícios
+========================================================================================
+✅ Antes de avançar para a próxima aula, pratique as atividades desta aula!!
+✅ Crie bancos, PDBS via interface gráfica e linha de comando
+✅ Exclua bancos e PDBS via interface gráfica e linha de comando
+✅ Simule várias vezes o processo. A prática leva a perfeição
+✅ Compartilhe seus resultados no Linkedin
+
+
+

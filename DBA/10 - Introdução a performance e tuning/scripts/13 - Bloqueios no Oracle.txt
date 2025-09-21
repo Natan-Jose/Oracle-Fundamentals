@@ -1,0 +1,206 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Bloqueios no Oracle																								|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/cncpt/data-concurrency-and-consistency.html#GUID-AD0CEE83-2F33-4906-94E1-3D1022924C63
+|-------------------------------------------------------------------------------|
+
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender sobre bloqueios no Oracle
+💡 Saber como lidar com os bloqueios
+
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Propósito do Mecanismo de Bloqueio
+📍 Quem é o culpado? 
+📍 Tipos de Bloqueio no Oracle
+📍 Simulando um bloqueio exclusivo
+📍 Identificando bloqueios
+📍 Ações do DBA
+📍 Boas práticas para o DBA
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ O Oracle utiliza mecanismos de bloqueio para garantir a consistência e a integridade dos dados
+▶️ O mecanismo de bloqueio é crucial para garantir que transações concorrentes mantenham a consistência dos dados durante operações de leitura e gravação
+▶️ É comum ter bloqueios, porém não é bom ter bloqueios longos
+▶️ Ficar identificando problemas de bloqueio no banco é algo muito comum no dia a dia do DBA
+⚠️ É muito comum, aplicações inteiras ficarem indisponíveis devido a problemas de bloqueio
+
+
+=================================================================
+== 🎯 Propósito do Mecanismo de Bloqueio
+=================================================================
+▶️ Garantia de Consistência dos Dados
+	▫️ O mecanismo de bloqueio é essencial para garantir que operações de leitura e gravação mantenham a consistência dos dados.
+	▫️ Evita que diferentes transações acessem e modifiquem os mesmos dados simultaneamente, 
+	   o que poderia levar a resultados inconsistentes ou corrompidos.
+▶️ Controle de Acesso Concorrente
+	▫️ Permite que várias transações sejam executadas simultaneamente, desde que não interfiram umas com as outras.
+	▫️ Gerencia eficientemente o acesso concorrente, mantendo a integridade dos dados.
+
+
+=================================================================
+== 🎯 Quem é o culpado? 
+=================================================================
+▶️ Muitas vezes, o problema é atribuído ao banco de dados
+▶️ Na maioria das vezes, o problema está na aplicação
+▶️ Em alguns casos, pode ser no banco, devido a problemas de lentidão
+
+
+=================================================================
+== 🎯 Tipos de Bloqueio no Oracle
+=================================================================
+▶️ Bloqueio Exclusivo (Exclusive Lock)
+	▫️ Bloqueia um recurso para uma transação específica, impedindo que outras transações o acessem até que o bloqueio seja liberado.
+	▫️ Utilizado durante operações de atualização, como INSERT, UPDATE ou DELETE.
+▶️ Bloqueio Compartilhado (Share Lock)
+	▫️ Permite que várias transações acessem um recurso simultaneamente para leitura.
+	▫️ Não impede outros acessos de leitura, mas evita que transações façam alterações no recurso bloqueado.
+
+
+=================================================================
+== 🎯 Simulando um bloqueio exclusivo
+=================================================================
+create table dept(   
+  deptno     number(2,0),   
+  dname      varchar2(14),   
+  loc        varchar2(13),   
+  constraint pk_dept primary key (deptno)   
+);
+
+create table emp(   
+  empno    number(4,0),   
+  ename    varchar2(10),   
+  job      varchar2(9),   
+  mgr      number(4,0),   
+  hiredate date,   
+  sal      number(7,2),   
+  comm     number(7,2),   
+  deptno   number(2,0),   
+  constraint pk_emp primary key (empno),   
+  constraint fk_deptno foreign key (deptno) references dept (deptno)   
+);
+
+insert into dept values(10, 'ACCOUNTING'	, 'NEW YORK');
+insert into dept values(20, 'RESEARCH'		, 'DALLAS');
+insert into dept values(30, 'SALES'			  , 'CHICAGO');
+insert into dept values(40, 'OPERATIONS'	, 'BOSTON');
+
+INSERT INTO emp VALUES (7839,'KING',   'PRESIDENT',NULL, TO_DATE('17-11-1981'	, 'dd-mm-yyyy'),    5000,    NULL,   10);
+INSERT INTO emp VALUES (7698,'BLAKE',  'MANAGER',  7839, TO_DATE('1-5-1981'		, 'dd-mm-yyyy'),    2850,    NULL,   30);
+INSERT INTO emp VALUES (7782,'CLARK',  'MANAGER',  7839, TO_DATE('9-6-1981'		, 'dd-mm-yyyy'),    2450,    NULL,   10);
+INSERT INTO emp VALUES (7566,'JONES',  'MANAGER',  7839, TO_DATE('2-4-1981'		, 'dd-mm-yyyy'),    2975,    NULL,   20);
+INSERT INTO emp VALUES (7788,'SCOTT',  'ANALYST',  7566, TO_DATE('13-JUL-87'	, 'dd-mm-rr') - 85, 3000,    NULL,   20);
+INSERT INTO emp VALUES (7902,'FORD',   'ANALYST',  7566, TO_DATE('3-12-1981'	, 'dd-mm-yyyy'),    3000,    NULL,   20);
+INSERT INTO emp VALUES (7369,'SMITH',  'CLERK',    7902, TO_DATE('17-12-1980'	, 'dd-mm-yyyy'),    800,     NULL,   20);
+INSERT INTO emp VALUES (7499,'ALLEN',  'SALESMAN', 7698, TO_DATE('20-2-1981'	, 'dd-mm-yyyy'),    1600,    300,    30);
+INSERT INTO emp VALUES (7521,'WARD',   'SALESMAN', 7698, TO_DATE('22-2-1981'	, 'dd-mm-yyyy'),    1250,    500,    30);
+INSERT INTO emp VALUES (7654,'MARTIN', 'SALESMAN', 7698, TO_DATE('28-9-1981'	, 'dd-mm-yyyy'),    1250,    1400,   30);
+INSERT INTO emp VALUES (7844,'TURNER', 'SALESMAN', 7698, TO_DATE('8-9-1981'		, 'dd-mm-yyyy'),    1500,    0,      30);
+INSERT INTO emp VALUES (7876,'ADAMS',  'CLERK',    7788, TO_DATE('13-JUL-87'	, 'dd-mm-rr') - 51, 1100,    NULL,   20);
+INSERT INTO emp VALUES (7900,'JAMES',  'CLERK',    7698, TO_DATE('3-12-1981'	, 'dd-mm-yyyy'),    950,     NULL,   30);
+INSERT INTO emp VALUES (7934,'MILLER', 'CLERK',    7782, TO_DATE('23-1-1982'	, 'dd-mm-yyyy'),    1300,    NULL,   10);
+COMMIT;
+
+
+
+
+
+-- Sessão 1
+SQL> UPDATE emp 
+  SET sal = sal*1.1
+  WHERE empno = 7839;
+
+-- Sessão 2
+SQL> UPDATE emp 
+  SET sal = sal*1.2
+  WHERE empno = 7839;
+
+
+⚠️ A sessão 1 gerou um bloqueio exclusivo na linha com employee_id = 100
+⚠️ A sessão 2 irá aguardar até que o bloqueio da sessão termine
+⚠️ A sessão 1 irá terminar sob os seguintes cenários:
+	☑️ Efetuar o commit/rollback
+	☑️ Ter a sessão finalizada (que irá submeter a sessão a rollback)
+⚠️ Nada impede que uma terceira sessão faça consulta na coluna com bloqueio exclusivo
+	SQL> SELECT salary
+	FROM HR.employees
+	WHERE employee_id = 100;
+
+=================================================================
+== 🎯 Identificando bloqueios
+=================================================================
+▶️ Existem algumas views no dicionário de dados que nos auxiliam nessa identificação:
+	▫️ V$SESSION
+	▫️ DBA_WAITERS
+	▫️ V$LOCKED_OBJECT
+	▫️ V$LOCK
+
+SQL> col username form a10
+SQL> col osuser form a10
+SQL> col program form a43
+SQL> col event form a30
+SQL> SELECT sid, serial#, status,username,osuser,program,blocking_session blocking,event
+FROM v$session
+WHERE blocking_session IS NOT NULL;
+
+▶️ No próprio servidor tem um script interessante chamado utllockt.sql
+
+SQL> set lines 200
+SQL> @$ORACLE_HOME/rdbms/admin/utllockt.sql
+
+
+▶️ Script @lock
+
+
+
+=================================================================
+== 🎯 Ações do DBA
+=================================================================
+▶️ O DBA só pode fazer duas coisas para resolver esse tipo de bloqueio:
+	▫️ Esperar ele finalizar
+	▫️ Dar um Kill na sessão bloqueadora
+⚠️ Não saia finalizando sessões bloqueadoras sem notificar ninguém!
+💡 Identifique o bloqueio e notifique os responsáveis pela aplicação.
+	▫️ Mande o máximo de evidências
+	▫️ Seja rápido
+	▫️ Caso haja autorização, finalize a sessão
+
+SQL> @s SID SERIAL#
+
+
+
+=================================================================
+== 🎯 Boas práticas para o DBA
+=================================================================
+💡 Bloqueios são inevitávies, aprenda a lidar com eles
+💡 Não seja um finalizador de bloqueios
+💡 Tenha scripts eficientes para identificar bloqueios
+💡 Monitore bloqueios de forma proativa
+💡 Fique atento aos eventos de espera de "enq: TX - row lock contention"
+
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa é uma atividade muito comum no dia a dia do DBA, tenha domínio sobre ela!
+💡 Pratique os cenários descritos na aula!
+💡 Seja rápido e eficiente
+
+ 

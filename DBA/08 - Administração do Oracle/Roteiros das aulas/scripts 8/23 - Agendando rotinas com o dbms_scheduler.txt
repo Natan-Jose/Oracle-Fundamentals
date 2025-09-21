@@ -1,0 +1,184 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Agendando rotinas com o dbms_scheduler                            |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_SCHEDULER.html
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a usar o scheduler do Oracle
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Verificando o parâmtro job_queue_processes
+📍 Criando um JOB
+📍 Informações sobre os jobs
+📍 Executando o JOB
+📍 Excluindo um JOB
+📍 Criando um JOB com auto drop
+📍 Modificando um JOB
+📍 Parando um JOB em execução
+📍 Scripts úteis
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ O pacote dmbs_scheduler foi introduzido no Oracle 10g
+▶️ Muito útil para agendar execução de rotinas com uma frequência regular
+▶️ Você pode executar comandos SQL, procedures, packages, shell script, backup, etc.
+▶️ Ele veio para substituir o pacote dbms_job, que foi deprecado na versão 12c
+▶️ A partir da versão 19c, os jobs gerenciados pelo dbms_job são convertidos automaticamente para o dmbs_scheduler 
+▶️ O parâmetro job_queue_processes deve estar com valor maior que zero (padrão 40)
+▶️ Views úteis:
+	▫️ DBA_SCHEDULER_JOBS -- Jobs do banco
+	▫️ DBA_SCHEDULER_RUNNING_JOBS -- Jobs em execução
+	▫️ DBA_SCHEDULER_JOB_RUN_DETAILS -- Histórico dos jobs
+	▫️ DBA_SCHEDULER_JOB_LOG -- Log dos jobs executados
+
+
+======================================================================
+== 🎯 Verificando o parâmtro job_queue_processes
+======================================================================
+SQL> set lines 800
+SQL> col value form a20
+SQL> col name form a20
+SQL> select name, value, ISDEFAULT,ISSYS_MODIFIABLE from v$Parameter where name = 'job_queue_processes';
+SQL> alter system set job_queue_processes = 40 scope=spfile;
+
+exec dbms_stats.gather_schema_stats (ownname => 'SOE' , cascade => TRUE, degree=>2);
+
+======================================================================
+== 🎯 Criando um JOB
+======================================================================
+
+BEGIN
+-- CREATE JOB
+    dbms_scheduler.create_job
+    (job_name       => 'SOE.UPDATE_STATS', 
+    job_type        => 'PLSQL_BLOCK', -- STORED_PROCEDURE or PLSQL_BLOCK
+    job_action      => 'dbms_stats.gather_schema_stats (ownname => ''SOE'' , cascade => TRUE, degree=>2);', 
+    start_date      => sysdate, 
+    repeat_interval => 'FREQ=DAILY;BYHOUR=1;BYMINUTE=30',
+    enabled         => true, 
+    comments        => 'ATUALIZA AS ESTATISTICAS DO OWNER SOE DIARIAMENTE');
+END;
+/
+
+-- REPEAT_INTERVAL OPTIONS 
+'FREQ=MINUTELY;INTERVAL=30' -- a cada trinta minutos
+'FREQ=DAILY;INTERVAL=2' -- a cada dois dias
+'FREQ=HOURLY;INTERVAL=1' -- a cada hora
+'FREQ=DAILY;BYHOUR=01' -- todos os dias 01 da manhã (01 a 24)
+'FREQ=DAILY;BYHOUR=1;BYMINUTE=30' -- todos os dias 01:30 da manhã (01 a 24)
+'FREQ=WEEKLY; BYDAY=SAT; BYHOUR=9; BYMINUTE=0; BYSECOND=0;'
+
+/* Dias da semana
+SUN
+SEC
+TUE
+WED
+THU
+FRI
+SAT
+*/
+
+
+
+
+======================================================================
+== 🎯 Informações sobre os JOBS
+======================================================================
+SQL> @jobs owner='SOE'
+SQL> @job_details SOE UPDATE_STATS
+
+
+======================================================================
+== 🎯 Executando o JOB
+======================================================================
+SQL> BEGIN
+  -- Run job
+  DBMS_SCHEDULER.run_job (job_name            => 'SOE.UPDATE_STATS',
+                       use_current_session => FALSE);
+ END;
+/
+
+SQL> @job_details SOE UPDATE_STATS
+
+
+======================================================================
+== 🎯 Excluindo um JOB
+======================================================================
+SQL> BEGIN
+-- DROP JOB
+  DBMS_SCHEDULER.drop_job (job_name => '"SOE"."UPDATE_STATS"');
+END;
+/
+
+
+======================================================================
+== 🎯 Criando um JOB com auto drop
+======================================================================
+SQL> BEGIN
+    -- CREATE JOB
+    dbms_scheduler.create_job
+    (job_name       => 'SYS.DB_STATS', 
+    job_type        => 'PLSQL_BLOCK', -- STORED_PROCEDURE or PLSQL_BLOCK
+    job_action      => 'dbms_stats.gather_DATABASE_STATS;', 
+    start_date      => sysdate, 
+    enabled         => true, 
+    auto_drop => true,
+    comments        => 'Atualiza as estatísticas do banco inteiro');
+END;
+/
+
+
+======================================================================
+== 🎯 Modificando um JOB
+======================================================================
+SQL> BEGIN
+  DBMS_SCHEDULER.set_attribute (
+    name      => 'SOE.UPDATE_STATS',
+    attribute => 'repeat_interval',
+    value     => 'FREQ=DAILY;BYHOUR=2;BYMINUTE=30');
+END;
+/
+
+
+======================================================================
+== 🎯 Parando um JOB em execução
+======================================================================
+SQL> @job_details SYS DB_STATS
+
+SQL> BEGIN
+  -- Stop jobs.
+  DBMS_SCHEDULER.stop_job (job_name => 'SYS.DB_STATS');
+END;
+/
+
+SQL> @job_details SYS DB_STATS
+
+======================================================================
+== 🎯 Scripts úteis
+======================================================================
+▶️ @jobs
+▶️ @job_details
+▶️ @job_logs
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É importante que o DBA saiba lidar com agendamento de tarefas no banco
+💡 Pratique a execução dessas atividades!
+💡 Salve os scripts utilizados nessa aula na sua pasta de scripts
+💡 Domine os scripts utilizados nessa aula!
+

@@ -1,0 +1,119 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Criando uma estrutura para testes									|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://github.com/oracle-samples/db-sample-schemas 
+|-------------------------------------------------------------------------------|
+
+
+===========================================================k======
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender como criar uma estrutura para ser usada como ambiente de testes
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Fazendo download dos schemas de exemplo
+📍 Criando os PDBS
+📍 Criando a estrutura para o sales_history
+📍 Criando a estrutura para o human_resources
+📍 Criando a estrutura para o customer_orders
+📍 Verificando os bancos criados
+📍 Incluir os PDBs criados no
+📍 tnsnames
+📍 Incluir os PDBs criados no Sql Developer
+📍 Ajustar o menu de conexões
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É importante termos uma estrutura para testes
+▶️ É uma prática de como criar uma estrutura para uma aplicação
+
+
+=================================================================
+== 🎯 Fazendo download dos schemas de exemplo
+=================================================================
+$ mkdir /tmp/sample_schemas
+$ curl -L -o /tmp/sample_schemas/v23.3.zip https://github.com/oracle-samples/db-sample-schemas/archive/refs/tags/v23.3.zip
+$ unzip -q /tmp/sample_schemas/v23.3.zip -d /tmp/sample_schemas/
+$ ls -lhtr  /tmp/sample_schemas/db-sample-schemas-23.3
+
+
+=================================================================
+== 🎯 Criando os PDBS
+=================================================================
+$ . oraenv
+$ sqlplus / as sysdba
+
+SQ> create pluggable database sales_history 	admin user pdb_admin identified by "Wellcome1";
+SQ> create pluggable database human_resources 	admin user pdb_admin identified by "Wellcome1";
+SQ> create pluggable database customer_orders 	admin user pdb_admin identified by "Wellcome1";
+
+SQL> alter pluggable database all open;
+SQL> alter pluggable database all save state;
+
+
+=================================================================
+== 🎯 Criando a estrutura para o sales_history
+=================================================================
+SQL> alter session set container = sales_history;
+SQL> create bigfile tablespace ts_sales_history datafile size 50m autoextend on next 50m maxsize 2g;
+SQL> @/tmp/sample_schemas/db-sample-schemas-23.3/sales_history/sh_install.sql
+
+
+=================================================================
+== 🎯 Criando a estrutura para o human_resources
+=================================================================
+$ export ORACLE_PDB_SID=human_resources
+$ sqlplus / as sysdba
+SQL> create bigfile tablespace ts_human_resources datafile size 50m autoextend on next 50m maxsize 2g;
+SQL> @/tmp/sample_schemas/db-sample-schemas-23.3/human_resources/hr_install.sql
+
+
+=================================================================
+== 🎯 Criando a estrutura para o customer_orders
+=================================================================
+$ vi /tmp/sample_schemas/db-sample-schemas-23.3/customer_orders/co_create.sql
+-- remover a constraint products_json_c
+
+$ export ORACLE_PDB_SID=customer_orders
+$ sqlplus / as sysdba
+SQL> create bigfile tablespace ts_customer_orders datafile size 50m autoextend on next 50m maxsize 2g;
+SQL> @/tmp/sample_schemas/db-sample-schemas-23.3/customer_orders/co_install.sql
+
+=================================================================
+== 🎯 Verificando os bancos criados
+=================================================================
+$ unset ORACLE_PDB_SID
+$ sqlplus / as sysdba
+
+SQL> show pdbs;
+
+
+=================================================================
+== 🎯 Incluir os PDBs criados no tnsnames
+=================================================================
+
+=================================================================
+== 🎯 Incluir os PDBs criados no Sql Developer
+=================================================================
+
+=================================================================
+== 🎯 Ajustar o menu de conexões
+=================================================================
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa é uma boa simulação de como criar um ambiente para uma aplicação
+ 

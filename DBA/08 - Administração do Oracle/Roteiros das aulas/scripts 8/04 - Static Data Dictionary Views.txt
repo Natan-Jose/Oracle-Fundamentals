@@ -1,0 +1,153 @@
+|-------------------------------------------------------------------------------|
+| Aula			: Static Data Dictionary Views									|
+| Módulo		: Managing Oracle Database										|
+| Curso			: Oracle Fundamentals											|
+| Instrutor		: Marcio Mandarino												|
+| URL			: mrdba.com.br/oracle_fundamentals								|
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/refrn/about-static-data-dictionary-views.html#GUID-10024282-6729-4C66-8679-FD653C9C7DE7
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Esclarecer o que são Static Data Dicionary Views
+💡 Compreender a diferença entre as views USER_, ALL_, DBA_ e CDB_
+💡 Saber lidar com as Data Dicionary Views em ambientes PDBs 
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 O que são Data Dictionary Views?
+📍 Tipos de Views do Dicionário de Dados
+📍 Data Dictionary no contexto de CDB
+📍 Verificando as views existentes
+📍 Exemplos de Data Dictionary Views
+📍 Exemplo prático
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Fornece informações sobre o banco de dados e seus objetos. 
+▶️ Elas são uma representação tabular de informações sobre o banco de dados, seus objetos, privilégios, otimizações e muito mais.
+
+
+=================================================================
+== 🎯 O que são Data Dictionary Views?
+=================================================================
+▶️ As tabelas do dicionário de dados não são diretamente acessíveis.
+▶️ As informações dessas views podem ser acessadas através das views do dicionário de dados.
+▶️ Para listar as views do dicionário disponíveis, você pode consultar a view DICTIONARY ou DICT
+
+=================================================================
+== 🎯 Tipos de Views do Dicionário de Dados
+=================================================================
+▶️ Existem quatro categorias principais de views do dicionário de dados:
+	▫️ USER_ Views	: Mostra todas as informações do esquema do usuário atual.
+	▫️ ALL_ Views	: Mostra todas as informações acessíveis ao usuário atual.
+	▫️ DBA_ Views	: Mostra todas as informações relevantes em todo o banco de dados.
+
+	▫️ CDB_ Views	: Mostra todas as informações dos objetos do container.
+
+
+
+
+=================================================================
+== 🎯 Data Dictionary no contexto de CDB
+=================================================================
+▶️ No Oracle CDB, os metadados do dicionário de dados são divididos entre o CDB root e os PDBs
+▶️ São tabelas ou views contendo dados referentes a múltiplos containers ou ao CDB inteiro.
+▶️ Todos os objetos de dados do container têm uma coluna CON_ID.
+▶️ Para cada view DBA_, existe uma view correspondente CDB_.
+▶️ Quando o container atual é um PDB, um usuário pode ver informações do dicionário de dados apenas para o PDB atual.
+▶️ No entanto, quando o container atual é o CDB root, um usuário comum pode consultar as views CDB_ para ver metadados para o CDB root e para PDBs para os quais esse usuário tem privilégios.
+
+
+=================================================================
+== 🎯 Verificando as views existentes
+=================================================================
+SQL> col table_name form a30
+SQL> col COMMENTS form a120
+SQL> set lines 180
+SQL> select * from dict where table_name like 'USER_%' order by table_name;
+SQL> select * from dict where table_name like 'ALL_%' order by table_name;
+SQL> select * from dict where table_name like 'DBA_%' order by table_name;
+SQL> select * from dict where table_name like 'CDB_%' order by table_name;
+
+=================================================================
+== 🎯 Exemplos de Data Dictionary Views
+=================================================================
+▶️ DBA_TABLES (ALL E USER)			: Fornece informações sobre todas as tabelas no banco de dados.
+▶️ DBA_INDEXES (ALL E USER)			: Mostra detalhes sobre os índices existentes no banco de dados.
+▶️ DBA_CONSTRAINTS (ALL E USER)		: Fornece informações sobre restrições (como PKs e FKs) em tabelas.
+▶️ DBA_USERS (ALL E USER)			: Lista todos os usuários do banco de dados.
+▶️ DBA_OBJECTS (ALL E USER)			: Mostra informações sobre todos os objetos do banco de dados.
+▶️ DBA_VIEWS (ALL E USER)			: Fornece detalhes sobre as views definidas no banco de dados.
+▶️ DBA_TABLESPACES 					: Mostra informações sobre as tablespaces do banco.
+▶️ DBA_SEQUENCES (ALL E USER)		: Fornece detalhes sobre sequências definidas no banco de dados.
+▶️ DBA_SYNONYMS (ALL E USER)			: Lista sinônimos definidos no banco de dados.
+▶️ DBA_ROLES (ALL E USER)			: Mostra informações sobre os papéis definidos.
+
+=================================================================
+== 🎯 Exemplo prático
+=================================================================
+-- Criando 3 usuários
+SQL> create user user1 identified by "Wellcome1";
+SQL> create user user2 identified by "Wellcome1";
+SQL> create user user3 identified by "Wellcome1";
+
+
+-- Criando uma tabela
+SQL> alter user user1 quota unlimited on USERS;
+SQL> grant create table to user1;
+SQL> grant create session to user1;
+SQL> create table user1.tb_teste (coluna1 varchar2(100)) tablespace USERS;
+SQL> grant create session to user2;
+SQL> grant create session to user3;
+
+
+-- Concedendo grants diferentes para os usuários user2 e user3
+SQL> grant select on user1.tb_teste to user2;
+SQL> grant select any table to user3;
+
+
+-- Acessando o banco com o usuário user1
+SQL> conn user1/"Wellcome1"
+SQL> select table_name from user_tables;
+SQL> select table_name from all_tables;
+SQL> select table_name from dba_tables;
+
+-- Acessando o banco com o usuário user2
+SQL> conn user2/"Wellcome1"
+SQL> select table_name from user_tables;
+SQL> select table_name from all_tables;
+SQL> select owner,table_name from all_tables where table_name = 'TB_TESTE';
+SQL> select table_name from dba_tables;
+
+-- Acessando o banco com o usuário user3
+SQL> conn user3/"Wellcome1"
+SQL> select table_name from user_tables;
+SQL> select table_name from all_tables;
+SQL> select owner,table_name from all_tables where table_name = 'TB_TESTE';
+SQL> select table_name from dba_tables;
+
+
+-- Caso o banco seja um CDB, acesse o container root:
+SQL> col table_name form a30
+SQL> col owner form a30
+
+SQL> select CON_ID, owner, table_name from cdb_tables;
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Conhecer as Static Data Dictionary Views do Oracle é estratégico para o DBA
+💡 Sua pasta de scripts deve possuir scripts para consultar essas views de forma rápida
+
+ 

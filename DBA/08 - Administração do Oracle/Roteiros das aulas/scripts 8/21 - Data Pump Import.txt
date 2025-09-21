@@ -1,0 +1,224 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Data Pump Import																  |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/sutil/datapump-import-utility.html#GUID-D11E340E-14C6-43B8-AB09-6335F0C1F71B
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender o que é e como usar o Data Pump Import
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Cuidados
+📍 Estratégia
+📍 Levantamento de requisitos
+📍 Criando o diretório no destino
+📍 Verificando as tablespaces no banco de origem
+📍 Fazendo backup na origem
+📍 Transferindo o dump para o servidor de destino
+📍 Criando as tablespaces necessárias no destino
+📍 Testando a conexão
+📍 Importando o schema
+📍 Importando o schema com outro nome (REMAP_SCHEMA)
+📍 Importando apenas objetos específicos (INCLUDE)
+📍 Excluindo tipos de objeto (EXCLUDE)
+📍 Importando apenas tabelas específicas (TABLES)
+📍 Importando com paralelismo (PARALLEL)
+📍 Sobrescrevendo tabelas existentes
+📍 Importando somente a estrutura (sem linhas)
+📍 Importando para outra tablespace
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ O Data Pump Import é usado para carregar no banco dados e metadados
+▶️ O Data Pump Import pode importar dados a partir:
+	▫️ Dump gerado pelo expdp
+	▫️ Diretamente a partir de outro banco de dados
+▶️ A maioria dos parâmetros do Data Pump Export são compatíveis com o impdp
+
+
+=================================================================
+== 🎯 Cuidados 
+=================================================================
+⚠️ Fique atento na string de conexão a ser utilizada
+⚠️ Saiba exatamente o que você deseja importar
+⚠️ Prepare os scripts em um bloco de notas
+⚠️ Revise os scripts
+⚠️ Ao exportar os dados, gere o dump somente com o que você precisa
+
+
+=================================================================
+== 🎯 Estratégia
+=================================================================
+🎯 Fazer backup do schema SOE no servidor de origem
+🎯 Transferir o dump para o servidor de destino
+🎯 Restaurar dump no servidor de destino
+
+
+=================================================================
+== 🎯 Levantamento de requisitos
+=================================================================
+⚠️ Tem espaço no servidor de destino? 
+⚠️ Quem solicitou, tem autorização? 
+⚠️ Qual o horário mais adequado para realizar a tarefa?  
+⚠️ Tem que comunicar alguém?
+⚠️ O schema existe no banco de destino? Caso exista, pode sobrescrever?
+⚠️ As tablespaces existem no banco de destino? 
+⚠️ Quem terá acesso a este ambiente? Quais serão os acessos? 
+
+
+=================================================================
+== 🎯 Criando o diretório no destino
+=================================================================
+$ mkdir /tmp/data_pump
+$ sqlplus / as sysdba
+
+SQL> create or replace directory dir_bkp as '/tmp/data_pump';
+
+
+=================================================================
+== 🎯 Verificando as tablespaces no banco de origem
+=================================================================
+$ sqlplus / as sysdba
+
+SQL> set lines 1000
+SQL> select tablespace_name, count(1), sum(bytes/1024/1024) size_mb
+from dba_segments
+where owner = 'SOE'
+group by tablespace_name;
+
+SQL> col username form a20
+SQL> col default_tablespace form a25
+SQL> select username, default_tablespace from dba_users where username ='SOE';
+
+
+=================================================================
+== 🎯 Fazendo backup na origem
+=================================================================
+$ export ORACLE_SID=orcl
+$ expdp system/"Wellcome1"@orcl directory=dir_bkp dumpfile=SOE.dmp logfile=SOE.log schemas=SOE parallel=4
+
+
+=================================================================
+== 🎯 Transferindo o dump para o servidor de destino
+=================================================================
+$ scp /tmp/data_pump/SOE.* oracle@192.168.68.114:/tmp/data_pump/
+
+
+=================================================================
+== 🎯 Criando as tablespaces necessárias no destino
+=================================================================
+$ . oraenv 
+$ sqlplus / as sysdba
+
+SQL> show parameter db_create_file_dest;
+SQL> !df -h
+
+SQL> create tablespace TS_SOE datafile size 1g 
+     autoextend on next 1g maxsize 5g;
+
+
+=================================================================
+== 🎯 Testando a conexão
+=================================================================
+⚠️ Faça o teste com o usuário que irá realizar a operação de import
+
+$ sqlplus system/"Wellcome1"@dev
+SQL> col instance_name form a15
+SQL> col host_name form a20
+SQL> select instance_name, host_name from v$instance;
+
+=================================================================
+== 🎯 Importando o schema
+=================================================================
+$ export ORACLE_SID=dev
+
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp logfile=SOE_IMP.log schemas=SOE
+
+
+=================================================================
+== 🎯 Importando o schema com outro nome (REMAP_SCHEMA)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp logfile=SOE_IMP.log schemas=SOE remap_schema=SOE:SOE_TESTE
+
+
+=================================================================
+== 🎯 Importando apenas objetos específicos (INCLUDE)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp INCLUDE=USER,TABLESPACE_QUOTA logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  parallel=4
+
+
+=================================================================
+== 🎯 Excluindo tipos de objeto (EXCLUDE)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp EXCLUDE=CONSTRAINT,REF_CONSTRAINT logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  parallel=4
+
+
+=================================================================
+== 🎯 Importando apenas tabelas específicas (TABLES)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp tables=SOE.INVENTORIES,SOE.PRODUCT_INFORMATION,SOE.WAREHOUSES logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  parallel=4
+
+
+=================================================================
+== 🎯 Importando com paralelismo (PARALLEL)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp tables=SOE.INVENTORIES,SOE.PRODUCT_INFORMATION,SOE.WAREHOUSES logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  PARALLEL=2
+
+
+=================================================================
+== 🎯 Sobrescrevendo tabelas existentes
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp tables=SOE.LOGON logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  PARALLEL=2 TABLE_EXISTS_ACTION=TRUNCATE
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp tables=SOE.LOGON logfile=SOE_IMP.log remap_schema=SOE:SOE_TESTE  PARALLEL=2 TABLE_EXISTS_ACTION=REPLACE
+
+
+=================================================================
+== 🎯 Importando somente a estrutura (sem linhas)
+=================================================================
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp logfile=SOE_IMP.log schemas=SOE CONTENT=METADATA_ONLY
+
+
+=================================================================
+== 🎯 Importando para outra tablespace
+=================================================================
+$ sqlplus / as sysdba
+SQL> create tablespace TS_SOE_DEV;
+SQL> exit
+
+
+$ impdp  system/"Wellcome1"@dev directory=dir_bkp  dumpfile=SOE.dmp logfile=SOE_IMP.log schemas=SOE remap_schema=SOE:SOE_TESTE remap_tablespace=TS_SOE:TS_SOE_DEV PARALLEL=4
+
+
+$ sqlplus / as sysdba
+
+SQL> select tablespace_name, count(1) 
+from dba_segments 
+where owner = 'SOE_TESTE' 
+group by tablespace_name;
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Um DBA precisa dominar o Data Pump
+💡 É uma atividade muito corriqueira mover dados, você precisar saber fazer com facilidade
+💡 Pratique a exaustão as lições dessa aula
+💡 Abordei os parâmetros mais utilizados, mas não abordei todos
+💡 Tente escrever os comandos para fixar, não copie e cole
+💡 Mas não se preocupe em decorar tudo, salve na sua pasta de howto como usar o datapump
+💡 Sua missão é compreender 

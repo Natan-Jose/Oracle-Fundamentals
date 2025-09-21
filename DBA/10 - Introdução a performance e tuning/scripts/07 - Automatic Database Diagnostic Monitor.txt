@@ -1,0 +1,90 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Automatic Database Diagnostic Monitor								              |
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tgdba/automatic-performance-diagnostics.html#GUID-843A596D-2D8B-422D-9C8D-73C0EF52739D
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a gerar relatórios com o ADDM
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Principais problemas que o ADDM analisa
+📍 Exemplo de report do ADDM
+📍 Exemplo prático 1
+📍 Scripts utilizados
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ O AWR armazena dados de performance, o ADDM analisa os dados gerados pelo AWR para gerar recomendações de performance
+▶️ Dá ótimos insights sobre o ambiente
+▶️ É mais fácil de lidar do que o AWR, pois vai direto ao ponto
+▶️ Quando você tira um relatório do AWR, ele tem uma sessão com as descobertas do ADDM
+⚠️ Faz parte do pacote Diagnostics and Tunigng Pack
+
+
+=================================================================
+== 🎯 Principais problemas que o ADDM analisa
+=================================================================
+▶️ Sobrecarga de CPU
+▶️ Área de memória mal dimensionada
+▶️ Capacidade de I/O
+▶️ SQL com alto consumo
+▶️ Concorrência 
+▶️ Objetos muito acessados
+
+
+=================================================================
+== 🎯 Exemplo de report do ADDM
+=================================================================
+
+FINDING 1: 31% impact (7798 seconds) 
+------------------------------------ 
+SQL statements were not shared due to the usage of literals. This resulted in 
+additional hard parses which were consuming significant database time.
+
+
+RECOMMENDATION 1: Application Analysis, 31% benefit (7798 seconds)
+  ACTION: Investigate application logic for possible use of bind variables
+    instead of literals. Alternatively, you may set the parameter 
+    "cursor_sharing" to "force".
+  RATIONALE: SQL statements with PLAN_HASH_VALUE 3106087033 were found to be
+    using literals. Look in V$SQL for examples of such SQL statements.
+
+
+
+
+
+=================================================================
+== 🎯 Gerando relatórios do ADDM
+=================================================================
+SQL> @$ORACLE_HOME/rdbms/admin/addmrpt.sql
+
+
+=================================================================
+== 🎯 Scripts utilizados
+=================================================================
+💡 @addm
+💡 @addm_detail
+💡 @addm_report
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma ferramenta muito útil
+💡 É um conselheiro rápido e eficiente
+💡 Você não precisa entender muito de performance para extrair coisas boas do ADDM
+💡 Salve todos os scripts na sua pasta de scripts
+💡 Pratique até ter desenvoltura na análise 

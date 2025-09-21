@@ -1,0 +1,213 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Executando scripts no banco de dados								|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: 
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender como executar scripts no banco de forma avançada
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito 
+📍 Conceito geral
+📍 Pontos importantes
+📍 Executando um Script
+📍 Comando ALTER SESSION SET CURRENT_SCHEMA
+📍 set echo on
+📍 spool
+📍 Timing ON
+📍 Time ON
+📍 Executando múltiplos scripts
+📍 Verificando os objetos criados
+📍 Compile os objetos inválidos
+📍 Problemas Comuns
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Executar scripts no banco de dados é uma atividade muito corriqueira para o DBA
+▶️ Normalmente é uma atividade executada por DBA Júnior, estagiário ou pela equipe de N1
+▶️ Mas isso não torna essa atividade exclusiva, DBAs Sêniors também executam scripts
+▶️ É comum ter muitos chamados (pedidos de atendimento) com essa finalidade
+▶️ É uma atividade muito fácil, porém como tudo em banco, é preciso ter cautela
+
+
+=================================================================
+== 🎯 Pontos importantes
+=================================================================
+▶️ Antes de executar o script, é preciso saber aonde você vai executar o script
+	▫️ Ambiente (Produção, Homologação, Desenvolvimento)
+	▫️ Servidor
+	▫️ Banco
+	▫️ Schema
+▶️ Saiba sempre os pontos acima, antes de excecutar um script no banco
+▶️ Normalmente esses tipos de pedido, chegam por email ou algum sistema de chamado
+💡 Se no pedido não estiver claro os pontos acima, levante essas informações com o soliciante
+🧨 Cuidado com scripts que façam alterações em bancos grandes e de grande volume de acesso
+▶️ Se você tiver vários scripts para rodar, a ordem pode importar
+▶️ O ideal é que o script seja primeiro executado em homologação&Dev para depois ser executado em produção
+▶️ Certifique-se de ter os privilégios necessários para executar a atividade
+
+
+=================================================================
+== 🎯 Executando um Script
+=================================================================
+
+-- No SQL*Plus ou no Sql Developer
+SQL> @C:\Users\planodba\Downloads\stage\dept.sql
+SQL> @C:\Users\planodba\Downloads\stage\emp.sql
+
+💡 Procure evitar espaços em branco no nome do script ou no caminho
+
+
+=================================================================
+== 🎯 Comando ALTER SESSION SET CURRENT_SCHEMA
+=================================================================
+▶️ O comando ALTER SESSION SET CURRENT_SCHEMA permite alterar o esquema atual da sessão sem precisar alterar o usuário conectado.
+
+-- Verificar o esquema atual
+SQL> SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL;
+SQL> show user;
+
+-- Alterar o esquema atual para 'TESTE'
+SQL> ALTER SESSION SET CURRENT_SCHEMA = TESTE;
+
+-- Verificar o esquema atual
+SQL> SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') FROM DUAL;
+SQL> show user;
+SQL> create table tb_teste (data date);
+SQL> col object_name form a20
+SQL> col owner form a20
+SQL> select owner, object_name from dba_objects where object_name = 'TB_TESTE'
+
+
+=================================================================
+== 🎯 set echo on
+=================================================================
+▶️ O comando SET ECHO ON permite exibir os comandos SQL conforme são executados, útil para depuração e auditoria.
+
+-- Habilitar a exibição de comandos
+SQL> SET ECHO ON
+SQL> @C:\Users\planodba\Downloads\stage\inserts.sql
+SQL> SET ECHO OFF
+SQL> @C:\Users\planodba\Downloads\stage\simple_package.sql
+
+
+=================================================================
+== 🎯 spool
+=================================================================
+▶️ O comando SPOOL redireciona a saída de comandos SQL para um arquivo, permitindo salvar resultados e logs.
+
+-- Iniciar a captura da saída em um arquivo
+SQL> SPOOL C:\Users\planodba\Downloads\stage\calcularsalarioanual.log;
+SQL> @C:\Users\planodba\Downloads\stage\simple_package.sql
+SQL> SPOOL OFF;
+
+💡 Envie o log para quem lhe fez a solicitação
+
+
+=================================================================
+== 🎯 Timing ON
+=================================================================
+▶️ O comando SET TIMING ON exibe o tempo de execução de cada comando SQL.
+
+-- Habilitar a exibição do tempo de execução
+SQL> SET TIMING ON
+
+SQL> @C:\Users\planodba\Downloads\stage\get_emp_names.sql
+
+
+=================================================================
+== 🎯 Time ON
+=================================================================
+▶️ O comando SET TIME ON exibe a hora atual antes de cada prompt do SQL*Plus.
+
+-- Habilitar a exibição da hora atual
+SQL> SET TIME ON
+
+-- Comando SQL cujo horário de execução será exibido
+SQL> @C:\Users\planodba\Downloads\stage\vw_emp_dept.sql
+
+
+=================================================================
+== 🎯 Executando múltiplos scripts
+=================================================================
+
+executa_tudo.sql
+
+set echo on
+set timing on
+set time on
+set trimspool on
+spool C:\Users\planodba\Downloads\stage\executa_tudo.log
+@@dept.sql
+@@emp.sql
+@@inserts.sql
+@@employees.sql
+@@emp_log.sql
+@@vw_emp_dept.sql
+@@get_emp_names.sql
+@@calcularsalarioanual.sql
+@@simple_package.sql
+spool off
+
+alter session set current_schema = TESTE;
+
+@C:\Users\planodba\Downloads\stage\executa_tudo.sql
+
+
+=================================================================
+== 🎯 Verificando os objetos criados
+=================================================================
+💡 Sempre verifique o status dos objetos criados
+
+✅ Crie um script last_objects.sql na sua pasta de scripts!
+SQL> col owner form a20
+SQL> col object_name form a30
+SQL> col object_type form a30
+SQL> select owner, object_name, object_type, status, created
+from dba_objects
+where created > SYSDATE-&1/(24*60);
+
+⚠️ Caso algum objeto fique inválido após a criação, não altere o código. Devolva ao solicitante
+
+
+=================================================================
+== 🎯 Compile os objetos inválidos
+=================================================================
+▶️ Compile os objetos que ficaram inválidos
+
+SQL> @compile_schema NOME_SCHEMA
+
+
+=================================================================
+== 🎯 Problemas Comuns
+=================================================================
+▶️ Script errado / incompleto
+▶️ Script executado no lugar errado
+▶️ Falta de privilégios
+💀 Executar um script que altere algo em uma tabela gigante em horário de pico
+	💀 Geração de bloqueios
+	💀 Pode travar a aplicação
+	💀 Reverter o que foi feito pode demorar mais do que deixar terminar
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa é uma atividade cotidiana do DBA, domine-a.
+💡 É simples, é fácil, tem DBAs que ganham a vida só fazendo isso!
+💡 O segredo é ter atenção e ser cuidadoso.
+⚠️ Atenção com ambientes com grande volume de dados e de alto uso
+ 

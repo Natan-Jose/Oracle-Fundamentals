@@ -1,0 +1,76 @@
+Aula        : Ajustes finos
+Módulo      : Oracle Install
+Instrutor   : Marcio Mandarino
+URL         : 
+
+=================================================================
+== Objetivos da Aula:
+=================================================================
+💡 Fazer ajustes finos no processo de instalação
+
+
+=================================================================
+== Agenda
+=================================================================
+✅ Instalando o rlwrap
+✅ Configurando alias uteis
+✅ Testando comandos
+✅ Testando o restart do banco
+
+ 
+=================================================================
+== Visão Geral
+=================================================================
+▶️ Nenhuma das dicas abaixo são obrigatórias no servidor, mas são úteis
+
+
+=================================================================
+== Instalando o rlwrap
+=================================================================
+# curl -L -o  /tmp/rlwrap-0.46.1-1.el8.x86_64.rpm https://yum.oracle.com/repo/OracleLinux/OL8/developer/EPEL/x86_64/getPackage/rlwrap-0.46.1-1.el8.x86_64.rpm
+# dnf localinstall /tmp/rlwrap-0.46.1-1.el8.x86_64.rpm -y
+
+
+=================================================================
+== Ajustar o /etc/oratab para início automático
+=================================================================
+# cat /etc/oratab
+# sed -i 's/:N/:Y/' /etc/oratab
+# cat /etc/oratab
+
+
+
+=================================================================
+== Configurando alias uteis
+=================================================================
+$  cat >> /home/oracle/.bash_profile <<EOF
+
+
+alias tns='vi ${TNS_ADMIN}tnsnames.ora'
+alias lsn='vi ${TNS_ADMIN}listener.ora'
+alias sqlplus='rlwrap sqlplus'
+alias s='rlwrap sqlplus / as sysdba'
+alias p='ps -aux | grep [^]]pmon | grep -v grep'
+alias l='lsnrctl status'
+
+EOF
+
+$ cat /home/oracle/.bash_profile
+
+
+=================================================================
+== Testando comandos
+=================================================================
+
+$ p
+$ l
+$ s
+$ tns
+$ lsn
+
+
+=================================================================
+== Testando o restart do banco
+=================================================================
+$ dbstart $ORACLE_HOME
+$ dbshut $ORACLE_HOME

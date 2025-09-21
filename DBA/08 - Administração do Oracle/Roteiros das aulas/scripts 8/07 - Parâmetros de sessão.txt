@@ -1,0 +1,91 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Parâmetros de Sessão                                              |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/nlspg/setting-up-globalization-support-environment.html#GUID-6475CA50-6476-4559-AD87-35D431276B20
+|-------------------------------------------------------------------------------|
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Compreender o que são os parâmetros NLS
+💡 Entender como funciona a prioridade dos parâmetros NLS
+💡 Saber como modificar parâmetros NLS
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Introdução
+📍 NLS_SESSION_PARAMETERS
+📍 NLS_INSTANCE_PARAMETERS
+📍 Prioridades
+📍 Modificando parâmetros NLS
+
+=================================================================
+== 🎯 Introdução
+=================================================================
+▶️ NLS significa National Language Support
+▶️ determinam as configurações de idioma, território, caracteres, etc.
+▶️ Esses parâmetros podem ser definidos em diferentes níveis: sessão, instância e database.
+▶️ Para cada nível, o Oracle fornece uma view específica:
+  ▫️ NLS_SESSIONS_PARAMETERS
+  ▫️ NLS_INSTANCE_PARAMETERS
+  ▫️ NLS_DATABASE_PARAMETERS
+
+=================================================================
+== 🎯 NLS_SESSION_PARAMETERS
+=================================================================
+▶️ Esta view mostra os parâmetros NLS que estão atualmente em vigor para a sessão atual
+▶️ Quando uma sessão é iniciada, os valores padrão de NLS são herdados da instância
+▶️ Esses valores podem ser alterados para a sessão usando o comando ALTER SESSION.
+
+=================================================================
+== 🎯 NLS_INSTANCE_PARAMETERS
+=================================================================
+▶️ Esta view mostra os parâmetros NLS que foram definidos para a instância atual do Oracle.
+▶️ Esses valores atuam como padrões para todas as novas sessões iniciadas na instância
+
+=================================================================
+== 🎯 Prioridades
+=================================================================
+▶️ Se um parâmetro NLS for definido em todos os níveis, o valor da sessão terá prioridade.
+▶️ Se não estiver definido no nível da sessão, o valor no nível da instância será usado.
+▶️ Se não estiver definido nem na sessão nem na instância, o valor no nível do banco de dados será usado.
+
+
+=================================================================
+== 🎯 Modificando parâmetros NLS
+=================================================================
+SQL> SET LINES 1000
+SQL> COL PARAMETER FORM A30
+SQL> COL VALUE FORM A40
+SQL> select * from nls_session_parameters order by 1;
+SQL> select * from nls_instance_parameters order by 1;
+SQL> select * from nls_database_parameters order by 1;
+
+SELECT 33/10 FROM dual;
+
+SQL> ALTER SESSION SET NLS_NUMERIC_CHARACTERS = '.,';
+
+SQL> SELECT sysdate FROM dual;
+
+SQL> ALTER SESSION SET NLS_DATE_FORMAT = 'DD/MM/RRRR HH24:MI:SS';
+SQL> SELECT sysdate FROM dual;
+SQL> select * from nls_session_parameters order by 1;
+SQL> EXIT
+$ sqlplus / as sysdba
+SQL> SELECT sysdate FROM dual;
+
+
+========================================================================================
+== 🎯 Conclusão
+========================================================================================
+💡 É importante saber como os parametros NLS afetam a sessão do usuário
+💡 Pratique os comandos acima, mas não copie e cole
+
+
+
+

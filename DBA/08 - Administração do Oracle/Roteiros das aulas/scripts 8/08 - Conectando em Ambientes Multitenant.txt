@@ -1,0 +1,92 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Conectando em Ambientes Multitenant								|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/multi/managing-a-multitenant-environment.html#GUID-93F1E584-D309-4301-82E0-AD0E60D4977C
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Entender a configuração e o uso do arquivo tnsnames.ora
+💡 Configurar a variável de ambiente ORACLE_PDB_SID
+💡 Utilizar os comandos: SHOW PDBS, SHOW CON_NAME e ALTER SESSION SET CONTAINER
+💡 Compreender as diferenças entre se conectar em um ambiente container e não container
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Configuração do arquivo tnsnames.ora
+📍 Variável de Ambiente ORACLE_PDB_SID
+📍 Comandos Úteis para Multitenant
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Existem várias formas de se conectar em ambiente multitenant database
+▶️ Você precisa ficar atento a qual ambiente você precisa se conectar
+▶️ O ideal é que você deixe as conexões do seu desktop prontas para todos os pdbs e cdbs
+
+
+=================================================================
+== 🎯 Configuração do arquivo tnsnames.ora
+=================================================================
+▶️ O tnsnames pode (e deve) ser configurado tanto no servidor quanto na sua estação de trabalho
+▶️ A configuração do tnsnames é exatamente a mesma quando configuramos na nossa estação e no servidor
+▶️ Mantenha o seu tnsnames sempre organizado e procure sempre usar comentários para esclarecer o motivo 
+▶️ Exemplos de tnsnames:
+
+PDB1=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=192.168.68.128)   (PORT=1521))  (CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=PDB1)))
+
+PDB1 =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.68.128)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = PDB1)
+    )
+  )
+
+$ cd /u01/app/oracle/product/19c/db_1/network/admin
+$ tnsping cdb1
+$ sqlplus sys/"Wellcome1"@pdb1 as sysdba
+
+=================================================================
+== 🎯 Variável de Ambiente ORACLE_PDB_SID
+=================================================================
+▶️ A variável de ambiente ORACLE_PDB_SID é usada para especificar o PDB ao qual um cliente deve se conectar.
+
+$ export ORACLE_PDB_SID=ORCLPDB1
+
+
+=================================================================
+== 🎯 Comandos Úteis para Multitenant
+=================================================================
+▶️ Exibe todos os PDBs no CDB atual:
+SQL> SHOW PDBS;
+
+▶️ Mostra o nome do container atual ao qual o usuário está conectado:
+SQL> SHOW CON_NAME;
+SQL> SELECT SYS_CONTEXT ('USERENV', 'CON_NAME') FROM DUAL;
+
+
+▶️ Muda o container atual para o PDB especificado
+SQL> ALTER SESSION SET CONTAINER = PDB1;
+
+▶️ Muda o container atual para container root
+SQL> ALTER SESSION SET CONTAINER = cdb$root;
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Ambientes Multitenant não é o ambiente mais comum, mas você deve estar preparado para eles
+💡 Saber se conectar em ambiente Multitenant é algo muito básico, um DBA deve saber! 

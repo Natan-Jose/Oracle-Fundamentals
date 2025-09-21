@@ -1,0 +1,320 @@
+|--------------------------------------------------------------------------------|
+| Aula      : Colocando o backup em piloto automático                            |
+| Módulo    : Basic Backup and Recovery                                          |
+| Curso     : Oracle Fundamentals                                                |
+| Instrutor : Marcio Mandarino                                                   |
+| URL       : mrdba.com.br/oracle_fundamentals                                   |
+|--------------------------------------------------------------------------------|
+| Referência: 
+|--------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Configurar uma rotina de backup funcional 
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito Geral
+📍 Configurações do RMAN
+📍 Congigurando a Fast Recover Area
+📍 Ativando o archivelog
+📍 Criar a estrutura
+📍 Criando script de backup full
+📍 Criando script de backup dos archives
+📍 Criando script Crosscheck
+📍 Testando as rotinas
+📍 Agendando as rotinas
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito Geral
+=================================================================
+▶️ Configurar uma rotina de backup no servidor para manter os backups por 5 dias
+▶️ Executar um backup full todos os dias
+▶️ Executar um backup de archives uma vez por hora
+▶️ Executar o crosscheck diariamente para manter apenas 5 dias de backup no disco
+
+
+=================================================================
+== 🎯 Configurações do RMAN
+=================================================================
+
+$ rman target /
+RMAN> configure retention policy to recovery window of 5 days; 
+RMAN> configure backup optimization on;
+RMAN> configure archivelog deletion policy to backed up 1 times to device type disk;
+RMAN> configure controlfile autobackup on;
+RMAN> configure device type disk backup type to compressed backupset;
+RMAN> configure compression algorithm 'LOW';
+RMAN> exit
+
+
+=================================================================
+== 🎯 Congigurando a Fast Recover Area
+=================================================================
+$ . oraenv
+$ sqlplus / as sysdba
+
+SQL> alter system set db_recovery_file_dest = '/backup' scope=both;
+SQL> alter system set db_recovery_file_dest_size = 100g scope=both;
+
+
+=================================================================
+== 🎯 Ativando o archivelog
+=================================================================
+-- Formatando o nome do archivelog
+SQL> alter system set log_archive_format='arc_%t_%s_%r.arc' scope=spfile;
+
+-- Definindo o destino do archivelog
+SQL> alter system set log_archive_dest_1='location=USE_DB_RECOVERY_FILE_DEST' scope=spfile;
+
+-- Ativando o Archivelog
+SQL> shutdown immediate;
+SQL> startup mount;
+SQL> alter database archivelog;
+SQL> alter database open;
+
+-- Verificando o archivelog
+SQL> archive log list;
+SQL> show parameter log_archive_format;
+SQL> show parameter log_archive_dest_1;
+SQL> show parameter db_recovery_file_dest;
+
+-- Testando a geração dos archives
+SQL> alter system switch logfile;
+SQL> alter system switch logfile;
+SQL> alter system switch logfile;
+SQL> exit;
+
+$ ls -lhtr /backup/${ORACLE_SID}/archivelog/
+
+=================================================================
+== 🎯 Criar a estrutura
+=================================================================
+-- Criando diretório
+$ mkdir -p /home/oracle/jobs/backup/rman/logs
+
+-- Criando os arquivos
+$ touch /home/oracle/jobs/backup/rman/bkp_full.sh
+$ touch /home/oracle/jobs/backup/rman/bkp_archs.sh
+$ touch /home/oracle/jobs/backup/rman/crosscheck.sh
+
+-- Tornando os arquivos executáveis
+$ chmod +x /home/oracle/jobs/backup/rman/bkp_full.sh
+$ chmod +x /home/oracle/jobs/backup/rman/bkp_archs.sh
+$ chmod +x /home/oracle/jobs/backup/rman/crosscheck.sh
+
+
+=================================================================
+== 🎯 Criando script de backup full
+=================================================================
+$ vi /home/oracle/jobs/backup/rman/bkp_full.sh
+
+
+#####################################################################################################
+#!/bin/ksh
+# Author  : Marcio da Costa Mandarino
+# Date    : 09 de Junho de 2023
+# Purpose : Rotina de backup Full do RMAN
+#####################################################################################################
+RMANDIR=/home/oracle/jobs/backup/rman
+
+NOMEHOST=`hostname`
+DIA=`date "+%F"`
+DATA=`date "+%F_%H_%M"`
+
+export ORACLE_SID=$1
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+export PATH=$ORACLE_HOME/bin:$PATH
+
+rman target / <<EOF
+spool log to ${RMANDIR}/logs/${ORACLE_SID}_bkp_full_${DATA}.log
+run
+{
+allocate channel ch01 device type disk;
+allocate channel ch02 device type disk;
+allocate channel ch03 device type disk;
+allocate channel ch04 device type disk;
+backup
+  as compressed backupset
+  skip inaccessible
+  tag bkp_full
+  database plus archivelog;
+delete
+  noprompt archivelog all
+  backed up 1 times to disk;
+backup
+  tag bkp_full_ctfile
+    (current controlfile);
+backup
+  tag bkp_full_spfile
+   (spfile);
+release channel ch01;
+release channel ch02;
+release channel ch03;
+release channel ch04;
+}
+spool log off
+EOF
+
+
+$ cat /home/oracle/jobs/backup/rman/bkp_full.sh
+
+
+=================================================================
+== 🎯 Criando script de backup dos archives
+=================================================================
+$ vi /home/oracle/jobs/backup/rman/bkp_archs.sh
+
+#####################################################################################################
+#!/bin/ksh
+# Author  : Marcio da Costa Mandarino
+# Date    : 09 de Junho de 2023
+# Purpose : Rotina de backup dos archives do RMAN
+#####################################################################################################
+RMANDIR=/home/oracle/jobs/backup/rman
+
+NOMEHOST=`hostname`
+DIA=`date "+%F"`
+DATA=`date "+%F_%H_%M"`
+
+export ORACLE_SID=$1
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+export PATH=$ORACLE_HOME/bin:$PATH
+
+rman target / <<EOF
+spool log to ${RMANDIR}/logs/${ORACLE_SID}_bkp_archs_${DATA}.log
+run
+{
+allocate channel ch01 device type disk;
+allocate channel ch02 device type disk;
+allocate channel ch03 device type disk;
+allocate channel ch04 device type disk;
+backup
+  as compressed backupset
+  skip inaccessible
+  tag BKP_ARCHS
+  (archivelog all);
+delete
+  noprompt archivelog all
+  backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+release channel ch01;
+release channel ch02;
+release channel ch03;
+release channel ch04;
+}
+spool log off
+EOF
+
+$ cat /home/oracle/jobs/backup/rman/bkp_archs.sh
+
+
+
+=================================================================
+== 🎯 Criando script Crosscheck
+=================================================================
+$ vi /home/oracle/jobs/backup/rman/crosscheck.sh
+
+#####################################################################################################
+#!/bin/ksh
+# Author  : Marcio da Costa Mandarino
+# Date    : 09 de Junho de 2023
+# Purpose : Rotina de crosscheck dos backups
+#####################################################################################################
+RMANDIR=/home/oracle/jobs/backup/rman
+
+NOMEHOST=`hostname`
+DIA=`date "+%F"`
+DATA=`date "+%F_%H_%M"`
+
+export ORACLE_SID=$1
+export ORACLE_BASE=/u01/app/oracle
+export ORACLE_HOME=/u01/app/oracle/product/19c/db_1
+export PATH=$ORACLE_HOME/bin:$PATH
+
+rman target / <<EOF
+spool log to ${RMANDIR}/logs/${ORACLE_SID}_crosscheck_${DATA}.log
+run
+{
+  crosscheck backup;
+  crosscheck archivelog all;
+  delete noprompt expired backup;
+  delete noprompt expired archivelog all;
+  delete noprompt obsolete;
+  report need backup;
+}
+spool log off
+EOF
+
+$ cat /home/oracle/jobs/backup/rman/crosscheck.sh
+
+
+=================================================================
+== 🎯 Testando as rotinas
+=================================================================
+$ cd /home/oracle/jobs/backup/rman/
+
+$ sh bkp_full.sh orcl
+$ sh bkp_archs.sh orcl
+$ sh crosscheck.sh orcl
+
+
+=================================================================
+== 🎯 Agendando as rotinas
+=================================================================
+
+$ crontab -e
+
+# Exemplo de agendamento no crontab
+# -------------------------------------------------------------
+# *  *  *  *  *  comando a ser executado (script)
+# |  |  |  |  |
+# |  |  |  |  +----- dia da semana (0 - 6) (Dom=0) (Seg=1) (Ter=2) (Qua=3) (Qui=4) (Sex=5) (Sab=6)
+# |  |  |  +------- mes (1 - 12)
+# |  |  +--------- dia do mes (1 - 31)
+# |  +----------- hora (0 - 23)
+# +------------- min (0 - 59)
+
+
+# Backup Full do RMAN
+00 02 * * * /home/oracle/jobs/backup/rman/bkp_full.sh orcl
+
+# Backup Archives do RMAN
+00 * * * * /home/oracle/jobs/backup/rman/bkp_archs.sh orcl
+
+# Crosshceck e Delete dos backups
+00 01 * * * /home/oracle/jobs/backup/rman/crosscheck.sh orcl
+
+
+$ crontab -l
+
+
+=================================================================
+== 🎯 Verificando se teve alguma falha
+=================================================================
+
+$ cd /home/oracle/jobs/backup/rman/logs
+$ grep "RMAN-" orcl_bkp_full_2025-07-16_09_25.log
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa rotina é extremamente funcional, pode ser aplicada em ambientes produtivos
+💡 Configure essa rotina na sua máquina virtual e verique se o backup vai executar conforme o agendamento
+💡 Ajuste a hora da rotina para um horário que você pode acompanhar
+
+ 

@@ -1,0 +1,116 @@
+========================================================================================
+== Instalação de multiplas Oracle Homes
+== Marcio Mandarino
+== marcio@mrdba.com.br
+== www.mrdba.com.br
+== https://www.linkedin.com/in/marciomandarino/
+========================================================================================
+
+cdb1:/u01/app/oracle/product/19c/db_1:N
+
+
+========================================================================================
+== Atividades de forma macro
+========================================================================================
+1. Ter o instalador do Oracle
+2. Criar o diretório para a nova ORACLE_HOME ⚠️
+3. Definir a ORACLE_HOME corretamente 🧨
+4. Descompactar o instalador na nova ORACLE_HOME 🧨
+5. Executar o instalador na nova ORACLE_HOME
+
+
+
+
+
+========================================================================================
+== Estrutura atual
+========================================================================================
+- Já existe um oracle instalado no diretório /u01/app/oracle/product/19c/db_1
+- Já existe um banco de dados criado (cdb1) 
+
+========================================================================================
+== Estrutura nova
+========================================================================================
+
+ORACLE HOME                             PROPÓSITO
+---------------------------------------------------------------------------
+/u01/app/oracle/product/19c/db_1        Produção
+/u01/app/oracle/product/19c/db_2        Homologação
+/u01/app/oracle/product/19c/db_3        Desenvolvimento
+
+
+========================================================================================
+== Criar os diretórios da instalação
+========================================================================================
+$ mkdir -p /u01/app/oracle/product/19c/db_2
+$ mkdir -p /u01/app/oracle/product/19c/db_3
+
+
+========================================================================================
+== Descompactar o instalador do oracle
+========================================================================================
+$ unzip -q /tmp/ora_install/LINUX.X64_193000_db_home.zip -d /u01/app/oracle/product/19c/db_2
+$ unzip -q /tmp/ora_install/LINUX.X64_193000_db_home.zip -d /u01/app/oracle/product/19c/db_3
+
+$ du -sh /u01/app/oracle/product/19c/*
+
+
+========================================================================================
+== CV_ASSUME_DISTID 
+========================================================================================
+$ export CV_ASSUME_DISTID=OEL7.6
+
+
+========================================================================================
+== Instalar os binários em homes diferentes 
+========================================================================================
+$ export ORACLE_BASE=/u01/app/oracle
+$ export ORACLE_HOME=/u01/app/oracle/product/19c/db_2
+$ env | grep 'ORACLE\|PATH' 
+$ cd ${ORACLE_HOME}
+$ pwd
+
+$ ./runInstaller    -waitforcompletion  -silent                    \
+    -responseFile ${ORACLE_HOME}/install/response/db_install.rsp \
+    oracle.install.option=INSTALL_DB_SWONLY                      \
+    ORACLE_HOSTNAME=${ORACLE_HOSTNAME}                           \
+    UNIX_GROUP_NAME=oinstall                                     \
+    INVENTORY_LOCATION=${ORA_INVENTORY}                          \
+    SELECTED_LANGUAGES=en,en_GB                                  \
+    ORACLE_HOME=${ORACLE_HOME}                                   \
+    ORACLE_BASE=${ORACLE_BASE}                                   \
+    oracle.install.db.InstallEdition=EE                          \
+    oracle.install.db.OSDBA_GROUP=oinstall                       \
+    oracle.install.db.OSBACKUPDBA_GROUP=oinstall                 \
+    oracle.install.db.OSDGDBA_GROUP=oinstall                     \
+    oracle.install.db.OSKMDBA_GROUP=oinstall                     \
+    oracle.install.db.OSRACDBA_GROUP=oinstall                    \
+    SECURITY_UPDATES_VIA_MYORACLESUPPORT=false                   \
+    DECLINE_SECURITY_UPDATES=true showProgress=true
+
+
+========================================================================================
+== Instalar os binários (db_3)
+========================================================================================
+$ export ORACLE_HOME=/u01/app/oracle/product/19c/db_3
+$ env | grep 'ORA\|PATH' 
+$ cd ${ORACLE_HOME}
+$ pwd
+
+$ ./runInstaller    -waitforcompletion  -silent                    \
+    -responseFile ${ORACLE_HOME}/install/response/db_install.rsp \
+    oracle.install.option=INSTALL_DB_SWONLY                      \
+    ORACLE_HOSTNAME=${ORACLE_HOSTNAME}                           \
+    UNIX_GROUP_NAME=oinstall                                     \
+    INVENTORY_LOCATION=${ORA_INVENTORY}                          \
+    SELECTED_LANGUAGES=en,en_GB                                  \
+    ORACLE_HOME=${ORACLE_HOME}                                   \
+    ORACLE_BASE=${ORACLE_BASE}                                   \
+    oracle.install.db.InstallEdition=EE                          \
+    oracle.install.db.OSDBA_GROUP=oinstall                       \
+    oracle.install.db.OSBACKUPDBA_GROUP=oinstall                 \
+    oracle.install.db.OSDGDBA_GROUP=oinstall                     \
+    oracle.install.db.OSKMDBA_GROUP=oinstall                     \
+    oracle.install.db.OSRACDBA_GROUP=oinstall                    \
+    SECURITY_UPDATES_VIA_MYORACLESUPPORT=false                   \
+    DECLINE_SECURITY_UPDATES=true showProgress=true

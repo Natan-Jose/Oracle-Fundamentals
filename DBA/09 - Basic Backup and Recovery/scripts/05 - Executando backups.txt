@@ -1,0 +1,226 @@
+---------------------------------------------------------------------------------|
+| Aula      : Executando backups                                                 |
+| Módulo    : Basic Backup and Recovery                                          |
+| Curso     : Oracle Fundamentals                                                |
+| Instrutor : Marcio Mandarino                                                   |
+| URL       : mrdba.com.br/oracle_fundamentals                                   |
+|--------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/backing-up-database.html#GUID-93BAB347-063F-439E-BDF3-109AB8D1F8E7
+|--------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a fazer backup do banco em diferentes tipos de cenário
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Fazendo um backup full 
+📍 Fazendo um backup apenas dos archives
+📍 Fazendo um backup incremental level 0 
+📍 Fazendo um backup incremental level 1 (diferencial)
+📍 Fazendo um backup incremental level 1 (cumulativo)
+📍 Fazendo fora da Fast Recovery Area
+📍 Backup em ambientes Multitenant
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Existem várias formas de se fazer backup no banco de dados Oracle
+▶️ Como vimos em aulas anteriores, temos 3 tipos de backup via RMAN:
+  ▫️ Backup Full
+  ▫️ Backup Incremental (Diferencial e Cumulativo)
+  ▫️ Backup de archives
+  ▫️ Backup do SPFILE
+  ▫️ Backup do controlfile
+
+
+=================================================================
+== 🎯 Fazendo um backup full 
+=================================================================
+RMAN> run
+{
+backup
+  as compressed backupset
+  skip inaccessible
+  tag bkp_full
+  database plus archivelog;
+delete
+	noprompt archivelog all
+	backed up 1 times to disk;
+backup
+  tag bkp_full_ctfile
+    (current controlfile);
+backup
+  tag bkp_full_spfile
+   (spfile);
+}
+
+▶️ Em um único comando estão sendo realizadas 4 operações
+▶️ Operação 1: Backup Full do banco
+	▫️ Backup Full do banco
+	▫️ "Pula" arquivos inacessíveis (skip inaccessible)
+	▫️ Define uma tag para o backup Full
+	▫️ Faz o backup dos archives logs 
+▶️ Operação 2: Excluir archives logs
+	▫️ Exclui os archives que tiveram ao menos 1 backup para disco
+▶️ Operação 3: Backup dos arquivos de controls
+	▫️ Faz o backup dos arquivos de controle 
+▶️ Operação 4: Faz o backup do spfile
+	▫️ Faz o backup dos arquivos de controle 
+
+
+
+=================================================================
+== 🎯 Fazendo um backup apenas dos archives
+=================================================================
+RMAN> run
+{
+allocate channel ch01 device type disk;
+allocate channel ch02 device type disk;
+allocate channel ch03 device type disk;
+allocate channel ch04 device type disk;
+backup
+  as compressed backupset
+  skip inaccessible
+  tag BKP_ARCHS
+  (archivelog all);
+delete
+	noprompt archivelog all
+	backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+release channel ch01;
+release channel ch02;
+release channel ch03;
+release channel ch04;
+}
+
+
+=================================================================
+== 🎯 Fazendo um backup incremental level 0 
+=================================================================
+RMAN> run
+{
+backup
+  as compressed backupset
+  incremental level 0
+  skip inaccessible
+  tag BKP_INCR_N0
+  database plus archivelog;
+delete
+	noprompt archivelog all
+	backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+}
+
+
+=================================================================
+== 🎯 Fazendo um backup incremental level 1 (diferencial)
+=================================================================
+RMAN> run
+{
+backup
+  as compressed backupset
+  incremental level 1 
+  skip inaccessible
+  tag BKP_INCR_N1
+  database plus archivelog;
+delete
+	noprompt archivelog all
+	backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+}
+
+
+=================================================================
+== 🎯 Fazendo um backup incremental level 1 (cumulativo)
+=================================================================
+RMAN> run
+{
+backup
+  as compressed backupset
+  incremental level 1 cumulative
+  skip inaccessible
+  tag BKP_INCR_N1_CUM
+  database plus archivelog;
+delete
+	noprompt archivelog all
+	backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+}
+
+
+
+
+=================================================================
+== 🎯 Fazendo fora da Fast Recovery Area
+=================================================================
+
+$ mkdir /home/oracle/bkp
+
+run
+{
+backup
+  as compressed backupset
+  skip inaccessible
+  tag BKP_FULL
+  database plus archivelog FORMAT '/home/oracle/bkp/backup_%U';
+delete
+  noprompt archivelog all
+  backed up 1 times to disk;
+backup
+  tag backup_ctfile
+    (current controlfile);
+backup
+  tag backup_spfile
+   (spfile);
+}
+
+=================================================================
+== 🎯 Backup em ambientes Multitenant 
+=================================================================
+▶️ É praticamente a mesma coisa que backups em ambientes non-cdb
+▶️ A única diferença é que você pode (Se quiser), realizar operações de backups em pdbs, de forma individual
+▶️ Quando você se conecta no container (rman target /), você faz backup de todos os pdbs
+
+$ . oraenv
+ORACLE_SID = [orcl] ? cdb1
+$ rman target /
+RMAN> exit
+$ export ORACLE_PDB_SID=pdb1
+$ rman target /
+RMAN> BACKUP PLUGGABLE DATABASE pdb1;
+
+💡 Você pode fazer backup de múltiplos PDBs, basta separar por vírgula.
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Pratique a execução dos comandos desta aula
+💡 Tente escrever os comandos para fixar, não copie e cole
+ 

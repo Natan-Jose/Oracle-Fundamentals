@@ -1,0 +1,162 @@
+script de apoio 
+
+drop tablespace ts_teste including contents and datafiles;
+drop user teste cascade;
+
+create tablespace ts_teste;
+create user teste identified by teste
+default tablespace ts_teste
+quota unlimited on ts_teste;
+
+grant create session, resource to teste;
+
+alter session set current_schema = teste;
+
+create table dept(
+  deptno 	 number(2,0),
+  dname  	 varchar2(14),
+  loc    	 varchar2(13),
+  constraint pk_dept primary key (deptno)
+);
+
+CREATE TABLE emp(
+  empno    number(4,0),
+  ename    varchar2(10),
+  job      varchar2(9),
+  mgr      number(4,0),
+  hiredate date,
+  sal      number(7,2),
+  comm     number(7,2),
+  deptno   number(2,0),
+  constraint pk_emp primary key (empno),
+  constraint fk_deptno foreign key (deptno) references dept (deptno)
+);
+
+INSERT INTO dept VALUES (10, 'ACCOUNTING'	, 'NEW YORK');
+INSERT INTO dept VALUES (20, 'RESEARCH'		, 'DALLAS');
+INSERT INTO dept VALUES (30, 'SALES'		, 'CHICAGO');
+INSERT INTO dept VALUES (40, 'OPERATIONS'	, 'BOSTON');
+
+INSERT INTO emp VALUES (7839, 'KING', 'PRESIDENT', NULL, TO_DATE ('17-11-1981', 'dd-mm-yyyy'), 5000, NULL, NULL);
+INSERT INTO emp VALUES (7698, 'BLAKE', 'MANAGER', 7839, TO_DATE('1-5-1981', 'dd-mm-yyyy'), 2850, NULL, NULL);
+INSERT INTO emp VALUES (7782, 'CLARK', 'MANAGER', 7839, TO_DATE ('9-6-1981', 'dd-mm-yyyy'), 2450, NULL, NULL);
+INSERT INTO emp VALUES (7566, 'JONES', 'MANAGER', 7839, TO_DATE('2-4-1981', 'dd-mm-yyyy'), 2975, NULL, NULL);
+INSERT INTO emp VALUES (7788, 'SCOTT', 'ANALYST', 7566, TO_DATE('13-JUL-87', 'dd-mm-rr') - 85, 3000, NULL, NULL);
+INSERT INTO emp VALUES (7902, 'FORD', 'ANALYST', 7566, TO_DATE ('3-12-1981', 'dd-mm-yyyy'), 3000, NULL, NULL);
+INSERT INTO emp VALUES (7369, 'SMITH', 'CLERK', 7902, TO_DATE ('17-12-1980', 'dd-mm-yyyy'), 800, NULL, NULL);
+INSERT INTO emp VALUES (7499, 'ALLEN', 'SALESMAN', 7698, TO_DATE('20-2-1981', 'dd-mm-yyyy'), 1600, 300, NULL);
+INSERT INTO emp VALUES (7521, 'WARD', 'SALESMAN', 7698, TO_DATE('22-2-1981', 'dd-mm-yyyy'), 1250, 500, NULL);
+INSERT INTO emp VALUES (7654, 'MARTIN', 'SALESMAN', 7698, TO_DATE('28-9-1981', 'dd-mm-yyyy'), 1250, 1400, NULL);
+INSERT INTO emp VALUES (7844, 'TURNER', 'SALESMAN', 7698, TO_DATE('8-9-1981', 'dd-mm-yyyy'), 1500, 0, NULL);
+INSERT INTO emp VALUES (7876, 'ADAMS', 'CLERK', 7788, TO_DATE('13-JUL-87', 'dd-mm-rr') - 51, 1100, NULL, NULL);
+INSERT INTO emp VALUES (7900, 'JAMES', 'CLERK', 7698, TO_DATE ('3-12-1981', 'dd-mm-yyyy'), 950, NULL, NULL);
+INSERT INTO emp VALUES (7934, 'MILLER', 'CLERK', 7782, TO_DATE ('23-1-1982', 'dd-mm-yyyy'), 1300, NULL, NULL);
+COMMIT;
+
+
+
+CREATE TABLE EMPLOYEES (
+	EMP_ID NUMBER(6) NOT NULL,
+	FIRST_NAME VARCHAR2(20),
+	LAST_NAME VARCHAR2(25),
+	EMAIL VARCHAR2(25),
+	PHONE_NUMBER VARCHAR2(20),
+	HIRE_DATE DATE,
+	JOB_ID VARCHAR2(10),
+	SALARY NUMBER(8,2),
+	MANAGER_ID NUMBER(6),
+	DEPARTMENT_ID NUMBER(4)
+);
+
+CREATE INDEX idx_lastname 
+ON EMPLOYEES (LAST_NAME);
+
+
+
+CREATE TABLE Emp_log (
+  Emp_id     NUMBER,
+  Log_date   DATE,
+  New_salary NUMBER,
+  Action 	 VARCHAR2(20),
+  	host varchar2(100),
+  	ip varchar2(100)
+    );
+
+CREATE OR REPLACE TRIGGER log_salary_increase
+  AFTER UPDATE OF sal ON emp
+  FOR EACH ROW
+BEGIN
+  INSERT INTO Emp_log (Emp_id, Log_date, New_salary, Action, host, ip)
+  VALUES (:NEW.empno, SYSDATE, :NEW.sal, 'New Salary', sys_context ('USERENV', 'HOST'), sys_context ('USERENV', 'IP_ADDRESS'));
+END;
+/
+
+
+create or replace view VW_EMP_DEPT
+    AS
+SELECT
+    b.ename,
+    b.job,
+    b.sal,
+    a.dname,
+    a.loc
+FROM
+		 dept a
+	INNER JOIN emp b ON a.deptno = b.deptno
+WHERE
+	job= 'MANAGER'
+ORDER BY
+	sal DESC;
+
+create or replace PROCEDURE Get_emp_names (Dept_num IN NUMBER) IS
+   Emp_name       VARCHAR2(10);
+   CURSOR         c1 (Depno NUMBER) IS
+					 SELECT Ename FROM emp
+ 						WHERE deptno = Depno;
+BEGIN
+   OPEN c1(Dept_num);
+   LOOP
+	  FETCH c1 INTO Emp_name;
+	  EXIT WHEN C1%NOTFOUND;
+	  DBMS_OUTPUT.PUT_LINE(Emp_name);
+   END LOOP;
+   CLOSE c1;
+END;
+/
+
+
+CREATE OR REPLACE FUNCTION calcularSalarioAnual(salarioMensal NUMBER) RETURN NUMBER IS
+  salarioAnual NUMBER;
+BEGIN
+  salarioAnual := salarioMensal * 12; -- Multiplica o salário mensal por 12 para obter o salário anual
+  RETURN salarioAnual; -- Retorna o salário anual calculado
+END;
+/
+
+
+
+-- Especificação do Package
+CREATE OR REPLACE PACKAGE simple_package AS
+	-- Declaração da função
+	FUNCTION add_numbers (num1 NUMBER, num2 NUMBER) RETURN NUMBER;
+
+	-- Declaração da Procedure 
+	PROCEDURE print_hello_world;
+END simple_package;
+/
+
+-- Corpo do Package 
+CREATE OR REPLACE PACKAGE BODY simple_package AS
+	-- Implementação da função 
+	FUNCTION add_numbers (num1 NUMBER, num2 NUMBER) RETURN NUMBER AS
+	BEGIN
+		RETURN num1 + num2;
+	END add_numbers;
+
+	-- Implementação da procedure
+	PROCEDURE print_hello_world AS
+	BEGIN 
+		DBMS_OUTPUT.PUT_LINE('Hello, world!');
+	END print_hello_world;
+END simple_package;
+/

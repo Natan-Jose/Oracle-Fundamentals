@@ -1,0 +1,144 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Problemas comuns de performance no banco							|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tdppt/oracle-database-performance-method.html#GUID-D5B54332-FE40-4537-B1C9-0704343CEF54
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Saber os problemas mais comuns de performance de um servidor Oracle
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Alto consumo de CPU
+📍 Tamanho inadequado da área de memória
+📍 Alto volume de I/O
+📍 Uso inadequado dos recursos do Oracle
+📍 Concorrência
+📍 Configurações do banco de dados
+📍 Problemas pontuais
+📍 Degradação do banco de dados com o passar do tempo
+📍 SQLs de alto consumo
+📍 Contenção em objetos 
+📍 Regressão da performance após tentar melhorar um SQL
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Entender os principais problemas de performance que podem ocorrer no Oracle
+
+
+=================================================================
+== 🎯 Alto consumo de CPU
+=================================================================
+▶️ Muitas vezes o banco de dados fica lento devido ao esgotamento do CPU
+▶️ O alto consumo de CPU é uma consequência e não a causa, é necessário investigar o problema raiz.
+▶️ O comando top (load) do Linux pode identificar de forma eficaz se o servidor está sobrecarregado 
+
+
+=================================================================
+== 🎯 Tamanho inadequado da área de memória
+=================================================================
+▶️ É preciso saber diferenciar o uso de memória RAM do SO para o uso de memória no Oracle
+▶️ Você pode ter um esgotamento de memória na sua instância e o SO está com baixa utilização de memória
+	▫️ Exemplo: Um servidor com 128 GB de RAM e uma SGA de 4GB
+▶️ Mas você pode ter um esgotamento de memória do servidor sem que sua instância esteja sobrecarregada
+	▫️ Exemplo: Um servidor com outros processos rodando nele
+▶️ Quanto mais memória você dá para o Oracle, mais ele quer
+⚠️ Quanto mais memória você dá para o Oracle, "mais rápido" ele fica? 
+	▫️ Em geral, o banco de dados é beneficiado por mais memória
+	▫️ Nem sempre o problema é resolvido como mais memória
+	▫️ Normalmente, resolver o problema de uma query problemática é mais eficaz do que aumentar memória
+
+
+
+
+
+=================================================================
+== 🎯 Alto volume de I/O
+=================================================================
+▶️ Sobrecarga no I/O do servidor pode ser causado por diversos motivos:
+	▫️ Queries pesadas
+	▫️ Alto volume de processos em paralelo
+	▫️ Queries ineficientes
+	▫️ Processos rodando fora do horário programado (backup, manutenção, etc)
+
+=================================================================
+== 🎯 Uso inadequado dos recursos do Oracle
+=================================================================
+▶️ Aplicações escritas de forma ineficiente são uma causa bem comum para essa situação
+	▫️ Alto volume de logons, logoff
+	▫️ Queries escritas de forma ineficiente
+
+
+=================================================================
+== 🎯 Concorrência
+=================================================================
+▶️ Bloqueios gerados por processos concorrentes
+▶️ Acessos simultâneos na mesma informação
+▶️ Processos longos concorrendo com processos pequenos
+⚠️ Isso é um problema muito comum em ambientes produtivos de alta demanda
+
+
+=================================================================
+== 🎯 Configurações do banco de dados
+=================================================================
+▶️ Dimensionamento incorreto da SGA, PGA, etc
+▶️ Dimensionamento de área de undo, log files, organização de arquivos do banco, etc
+▶️ Parâmetros de inicialização definidos sem estar de acordo com a necessidade do ambiente
+
+/u02 (tablespace X tabela compras)
+/u03 (tablespace Y tabela de vendas)
+
+
+=================================================================
+== 🎯 Problemas pontuais
+=================================================================
+▶️ Procesos pesados sendo executdos ponutalmente
+▶️ Alguma carga
+▶️ Algum desenvolvedor executado alguma query maligna
+
+
+=================================================================
+== 🎯 Degradação do banco de dados com o passar do tempo
+=================================================================
+▶️ Crescimento vegetativo do banco
+▶️ Poucas ações de melhorias
+
+
+
+=================================================================
+== 🎯 SQLs de alto consumo
+=================================================================
+▶️ Queries muito pesadas sendo executadas
+
+
+=================================================================
+== 🎯 Contenção em objetos 
+=================================================================
+▶️ Sobrecarga de objetos (muitos acessos simultâneos)
+
+
+=================================================================
+== 🎯 Regressão da performance após tentar melhorar um SQL
+=================================================================
+▶️ As vezes, alguém tenta melhorar, mas piora...
+
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É preciso ir ganhando maturidade com o passar do tempo, de como lidar com esses tipos de problema
+💡 É comum que ocorram problemas simultâneos
+💡 Tente compreender quando a questão é um sintoma ou a causa
+ 

@@ -1,0 +1,87 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Finalizando Sessões												|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/managing-processes.html#GUID-260EE1DC-D306-4B4E-B848-A94DA2F46615
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a finalizar uma sessão no Oracle
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Comando para finalizar uma sessão
+📍 Identificando sessões
+📍 Finalizando uma sessão
+📍 Finalizando uma sessão em ambientes Oracle RAC
+📍 Conclusão
+
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É muito comum no dia a dia do DBA, termos que finalizar uma sessão
+▶️ Quando uma sessão é finalizada, todas as transações serão submetidas a rollback
+⚠️ Dependendo do tamanho da transação, o rollback pode demorar minutos ou horas!
+▶️ Existem diversos fatores que podem ocorrer para termos que finalizar uma sessão:
+	▫️ Sessão gerando bloqueios
+	▫️ Sessão rodando um processamento pesado de mais
+	▫️ Sessão fazendo algo que não deveria
+	▫️ Processo não terminou dentro do tempo esperado
+
+
+=================================================================
+== 🎯 Comando para finalizar uma sessão
+=================================================================
+SQL> ALTER SYSTEM KILL SESSION 'SID,SERIAL#';
+
+
+=================================================================
+== 🎯 Identificando sessões 
+=================================================================
+-- Oracle Single
+SQL> col program form a50
+SQL> select sid, serial#, program, status from v$session;
+
+
+-- Oracle Single
+SQL> col program form a50
+SQL> select inst_id, sid, serial#, program, status from gv$session;
+
+-- Usando o @quem
+@quem
+@quem2 1=1
+
+
+=================================================================
+== 🎯 Finalizando uma sessão
+=================================================================
+SQL> alter system kill session '617,35864' immediate;
+SQL> @kill sid serial
+
+
+=================================================================
+== 🎯 Finalizando uma sessão em ambientes Oracle RAC
+=================================================================
+▶️ Em ambientes Oracle RAC, você precisa especificar o número da instância
+
+SQL> alter system kill session '61,1172,@2' immediate;
+SQL> @kill sid serial
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma atividade do dia a dia do DBA, portanto, pratique bastante 
+💡 Tenha boa desenvoltura no uso dos scripts quem, quem2, kill e kill2
+💡 Não se preocupe em decorar os comandos
+ 

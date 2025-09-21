@@ -1,0 +1,102 @@
+|--------------------------------------------------------------------------------|
+| Aula      : Operações básicas com o RMAN										 |
+| Módulo    : Basic Backup and Recovery                                          |
+| Curso     : Oracle Fundamentals                                                |
+| Instrutor : Marcio Mandarino                                                   |
+| URL       : mrdba.com.br/oracle_fundamentals                                   |
+|--------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/bradv/starting-interacting-with-rman-client.html#GUID-92CF0473-8B35-48A8-BA49-4DC52A7ECBC0
+|--------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a utilizar alguns comandos básicos do RMAN
+💡 Aprender a alterar as configurações do RMAN
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Listando os backups
+📍 Report backup
+📍 Vendo as configurações do RMAN 
+📍 Gerando um arquivo de log 
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Existem vários comandos que podem ser executados no RMAN
+▶️ Veremos alguns dos comandos mais básicos e mais utilizados no dia a dia
+
+
+=================================================================
+== 🎯 Listando os backups
+=================================================================
+▶️ Lista os backups do banco
+
+RMAN> list backup summary;
+RMAN> list backup of datafile 1;
+RMAN> list backup of archivelog all;
+RMAN> list backup of database;
+
+
+=================================================================
+== 🎯 Report backup 
+=================================================================
+▶️ Faz uma análise dos backups de acordo com a política de backup definida
+
+-- Lista os arquivos que precisam de backup, conforme a definição da política de retenção
+RMAN> report need backup database;
+
+
+=================================================================
+== 🎯 Vendo as configurações do RMAN 
+=================================================================
+RMAN> show all;
+RMAN> show retention policy;
+RMAN> configure retention policy to recovery window of 5 days; 
+RMAN> show retention policy;
+RMAN> configure retention policy clear; 
+RMAN> show retention policy;
+
+
+RMAN> configure retention policy to recovery window of 5 days; 
+RMAN> configure backup optimization on;
+RMAN> configure archivelog deletion policy to backed up 1 times to device type disk;
+RMAN> configure controlfile autobackup on;
+RMAN> configure device type disk backup type to compressed backupset;
+RMAN> configure compression algorithm 'BASIC';
+RMAN> configure device type disk parallelism 8;
+
+==================================================================
+== Exemplo para comparar cada parâmetro de compressão
+==================================================================
+
+COMPRESSÃO         TEMPO      TAMANHO		PERCENTUAL GANHO ()
+SEM COMPRESSÃO     4 MIN      100GB
+LOW			       5 MIN      20GB
+BASIC    	       6 MIN      18GB
+MEDIUM 		       12 MIN     17GB
+HIGH   		       19 MIN 	  16,5GB
+
+=================================================================
+== 🎯 Gerando um arquivo de log 
+=================================================================
+
+RMAN> spool log to /tmp/conf.log
+RMAN> show all;
+RMAN> spool log off
+RMAN> exit
+$ cat /tmp/conf.log
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Pratique a execução dos comandos desta aula
+💡 Tente escrever os comandos para fixar, não copie e cole
+
+ 

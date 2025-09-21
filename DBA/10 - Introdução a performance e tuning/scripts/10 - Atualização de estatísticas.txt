@@ -1,0 +1,195 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Atualização de estatísticas										|
+| Módulo    : Introdução a performance e tuning                                 |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tgsql/gathering-optimizer-statistics.html#GUID-A3E66485-F827-494E-99D7-6E4558E9CC21
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender quando e como coletar estatísticas no Oracle
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Por Que Coletar estatísticas
+📍 Quando Coletar as estatísticas
+📍 Coleta de estatística automática
+📍 Precauções ao coletar estatíticas
+📍 O Pacote dbms_stats
+📍 DBMS_STATS.GATHER_SCHEMA_STATS
+📍 DBMS_STATS.GATHER_TABLE_STATS
+📍 DBMS_STATS.GATHER_DATABASE_STATS
+📍 DBMS_STATS.GATHER_DICTIONARY_STATS
+📍 DBMS_STATS.GATHER_DICTIONARY_STATS
+📍 Monitorando as informações de estatísticas coletadas
+📍 Criando um cenário de exclusão em massa
+📍 Minha visão sobre coleta de estatísticas
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ A coleta de estatísticas é essencial para a manutenção do desempenho do banco de dados Oracle
+▶️ Estatísticas precisas permitem ao otimizador de consultas (Query Optimizer) gerar planos de execução eficientes
+▶️ resulta em consultas mais rápidas e uso otimizado dos recursos do sistema.
+
+
+=================================================================
+== 🎯 Por Que Coletar estatísticas
+=================================================================
+▶️ Garantir que o otimizador de consultas tenha informações atualizadas sobre a distribuição dos dados.
+▶️ Melhorar o desempenho das consultas ao permitir que o otimizador escolha os melhores planos de execução.
+▶️ Evitar problemas de desempenho causados por estatísticas desatualizadas ou imprecisas.
+
+
+=================================================================
+== 🎯 Quando Coletar as estatísticas
+=================================================================
+▶️ Após grandes operações de carga de dados
+▶️ Após operações de manutenção de dados em larga escala (e.g., INSERT, UPDATE, DELETE em massa)
+▶️ Periodicamente, com base em um cronograma de manutenção preventiva
+
+
+=================================================================
+== 🎯 Coleta de estatística automática
+=================================================================
+▶️ O Oracle coleta automaticamente as estatísticas dos segmentos dentro de uma janela de manutenção predefinida 
+▶️ Teoricamente, não precisamos nos preocupar com a coleta das estatíticas, exceto as situações citadas acima
+▶️ Muitos DBAs gostam de manter uma coleta regular de estatística do banco, independentemente da janela de manutenção
+	▫️ Eu sou um deles 🙂
+
+
+=================================================================
+== 🎯 Precauções ao coletar estatíticas
+=================================================================
+▶️ É um processo tranquilo de se fazer, porém requer muito CPU e I/O
+▶️ Procure fazer em horários alternativos
+⚠️ Atenção para coleta de estatísticas de objetos grandes
+
+
+=================================================================
+== 🎯 O Pacote dbms_stats
+=================================================================
+▶️ Existem várias procedures no pacote dbms_stats, as mais comuns são:
+	▫️ GATHER_SCHEMA_STATS
+	▫️ GATHER_TABLE_STATS
+	▫️ GATHER_DATABASE_STATS
+	▫️ GATHER_DICTIONARY_STATS
+
+
+=================================================================
+== 🎯 DBMS_STATS.GATHER_SCHEMA_STATS
+=================================================================
+▶️ Coleta as estatíticas de todos os segmentos do schema
+
+SQL> EXEC DBMS_STATS.GATHER_SCHEMA_STATS('SOE');
+SQL> EXEC DBMS_STATS.GATHER_SCHEMA_STATS('SOE', cascade => TRUE);
+SQL> EXEC DBMS_STATS.GATHER_SCHEMA_STATS('SOE', cascade => TRUE, degree => 4);
+
+💡 O parâmetro cascade atualiza as estatísticas da tabela e de seus respectivos índices
+💡 O parâmetro degree faz a operação em paralelismo (disponível apenas no EE)
+
+
+=================================================================
+== 🎯 DBMS_STATS.GATHER_TABLE_STATS
+=================================================================
+▶️ Coleta as estatíticas de uma determinada tabela
+
+SQL> EXEC DBMS_STATS.GATHER_TABLE_STATS('SOE', tabname => 'WAREHOUSES', cascade => TRUE, degree => 4);
+
+
+=================================================================
+== 🎯 DBMS_STATS.GATHER_DATABASE_STATS
+=================================================================
+▶️ Coleta as estatística do database inteiro
+
+SQL> EXEC DBMS_STATS.GATHER_DATABASE_STATS(degree => 4);
+
+
+=================================================================
+== 🎯 DBMS_STATS.GATHER_DICTIONARY_STATS
+=================================================================
+▶️ Coleta as estatística do dicionáiro de dados
+
+
+
+=================================================================
+== 🎯 DBMS_STATS.GATHER_DICTIONARY_STATS
+=================================================================
+SQL> EXEC DBMS_STATS.GATHER_DICTIONARY_STATS(degree => 4);
+
+
+=================================================================
+== 🎯 Monitorando as informações de estatísticas coletadas
+=================================================================
+▶️ Você pode monitorar quando as estatísticas foram coletadas
+	▫️ DBA_TAB_STATISTICS (Coluna LAST_ANALYZED)
+	▫️ DBA_IND_STATISTICS (Coluna LAST_ANALYZED)
+	▫️ DBA_TABLES (Coluna LAST_ANALYZED)
+	▫️ DBA_INDEXES (Coluna LAST_ANALYZED)
+
+SQL> select owner, table_name, num_rows, last_analyzed from dba_tables where owner = 'SOE';
+
+
+=================================================================
+== 🎯 Criando um cenário de exclusão em massa
+=================================================================
+
+-- Criando uma carga
+SQL> set lines 200
+SQL> create table tb_stats as (select * from dba_objects);
+SQL> insert into tb_stats (select * from dba_objects);
+SQL> insert into tb_stats (select * from dba_objects);
+SQL> commit;
+
+
+-- Verificando as informações da tabela
+SQL> select count(1) from tb_stats;
+SQL> COL TABLE_NAME FORM A20
+SQL> COL NUM_ROWS FORM 999,999,999
+SQL> SELECT table_name, num_rows,to_char(LAST_ANALYZED,'DD/MM/RRRR HH24:MI:SS') LAST_ANALYZED, stale_stats FROM dba_tab_statistics WHERE table_name = 'TB_STATS';
+SQL> EXEC DBMS_STATS.GATHER_TABLE_STATS('SYS', tabname => 'TB_STATS', cascade => TRUE, degree => 4);
+
+
+-- Simulando uma exclusão em massa
+SQL> delete from tb_stats;
+SQL> select count(1) from tb_stats;
+
+
+-- Verificando as
+SQL> COL TABLE_NAME FORM A20
+SQL> COL NUM_ROWS FORM 999,999,999
+SQL> SELECT table_name, num_rows,to_char(LAST_ANALYZED,'DD/MM/RRRR HH24:MI:SS') LAST_ANALYZED, stale_stats FROM dba_tab_statistics WHERE table_name = 'TB_STATS';
+
+
+SQL> EXEC DBMS_STATS.GATHER_TABLE_STATS('SYS', tabname => 'TB_STATS', cascade => TRUE, degree => 4);
+
+SQL> drop table tb_stats;
+
+
+
+
+=================================================================
+== 🎯 Minha visão sobre coleta de estatísticas
+=================================================================
+▶️ No passado, era algo obrigatório, pois antes do Oracle 10g, as coletas eram manuais
+▶️ DBAs mais antigos, ficaram com a ideia da necessidade/obrigatoriedade da coleta de estatísticas (eu sou um deles)
+▶️ Minha lihha de pensamento é:
+	▫️ "Se bem não fizer, mal não fará"
+	▫️ Se tem janela para executar a coleta de estatísticas, por que não? 
+	▫️ Pra que correr o risco do plano de manutenção não conseguir fazer tudo que ele precisa fazer?	
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Saiba quando coletar estatísticas do banco
+💡 Saiba como coletar estatísticas do banco
+💡 Digite os comandos para fixar o conhecimento, mas não se apegue a decorar comandos, entenda o conceito.

@@ -1,0 +1,119 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Usuários em Ambientes Multitenant								|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/multi/overview-of-the-multitenant-architecture.html#GUID-B14FD999-8FB2-428E-9122-BCB55DE516B8
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Entender como funciona a criação e manutenção de usuários em ambientes Multitenant
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Usuário Local
+📍 riação de Usuários Comuns
+📍 Concedendo Privilégios e Roles
+📍 Criando e Concedendo Roles
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Em ambientes multitenant, temos dois tipos de usuário:
+	▫️ LOCAL
+	▫️ COMMON
+▶️ Cada PDB possui seu próprio dicionário de dados
+▶️ Os usuários locais se registram no dicionário da PDB
+▶️ Os usuários comuns se registram no dicionário do "CDB$ROOT"
+
+https://docs.oracle.com/en/database/oracle/oracle-database/19/multi/img/cncpt340.png
+
+=================================================================
+== 🎯 Usuário Local
+=================================================================
+▶️ Só existe dentro do PDB
+💡 É exatamente igual ao usuário de um ambiente non container
+
+$ sqlplus / as sysdba
+SQL> alter session set container = PDB1;
+
+-- Criar um usuário local
+CREATE USER local_user IDENTIFIED BY password;
+
+-- Conceder privilégios ao usuário local
+GRANT CREATE SESSION TO local_user;
+
+
+-- Listar usuários no PDB
+SQL> SELECT username FROM dba_users where username = 'LOCAL_USER';
+
+SQL> @users created
+
+
+=================================================================
+== 🎯 Criação de Usuários Comuns
+=================================================================
+▶️ Criados no CDB root e têm acesso a todos os PDBs
+▶️ Podem acessar todos os PDBs dentro do CDB
+⚠️ Devem ter o prefixo “C##” no nome
+
+$ sqlplus / as sysdba
+SQL> alter session set container = cdb$root;
+
+-- Criar um usuário comum
+SQL> CREATE USER C##common_user IDENTIFIED BY password;
+
+-- Conceder privilégios ao usuário comum
+SQL> GRANT CREATE SESSION TO C##common_user CONTAINER=ALL;
+
+-- Listar usuários no CDB root
+SQL> SELECT username FROM cdb_users WHERE common='YES';
+
+SQL> @users created
+
+
+=================================================================
+== 🎯 Concedendo Privilégios e Roles
+=================================================================
+-- Conceder privilégios a um usuário local
+SQL> alter session set container = pdb1;
+SQL> GRANT CREATE SESSION TO local_user;
+
+-- Conceder privilégios a um usuário comum em todos os containers
+SQL> alter session set container = cdb$root;
+SQL> GRANT CREATE SESSION TO C##common_user CONTAINER=ALL;
+
+=================================================================
+== 🎯 Criando e Concedendo Roles
+=================================================================
+-- Conectar ao CDB root como sysdba
+$ sqlplus / as sysdba
+SQL> alter session set container = cdb$root;
+
+-- Criar uma role comum
+SQL> CREATE ROLE C##common_role CONTAINER=ALL;
+
+-- Conceder privilégios à role comum
+SQL> GRANT CREATE TABLE TO C##common_role CONTAINER=ALL;
+
+-- Conceder a role a um usuário comum
+SQL> GRANT C##common_role TO C##common_user CONTAINER=ALL;
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 O assunto de criação e gerenciamento de usuários em ambientes multitentant é amplo
+💡 Abordei os princípios básicos do gerenciamento de usuários
+💡 Se o seu ambiente for multitenant e você precisar de mais conhecimento, consulte o link de referência da aula
+
+ 

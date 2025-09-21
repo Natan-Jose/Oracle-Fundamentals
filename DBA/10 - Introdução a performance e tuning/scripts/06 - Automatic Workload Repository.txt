@@ -1,0 +1,160 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Automatic Workload Repository 					   |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/tgdba/gathering-database-statistics.html#GUID-CBB1716F-2B20-4575-ADCE-94E33BEA53EF
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a utilizar o AWR
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Quando utilizar o AWR
+📍 Benefícios do AWR
+📍 Configurações do AWR
+📍 Modificando as configurações do AWR
+📍 Criando um snapshot manualmente
+📍 Excluindo snapshots
+📍 Criando uma baseline
+📍 Scripts para gerar relatórios AWR
+📍 Gerando relatórios AWR
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ O Automatic Workload Repository (AWR) é um repositório que coleta, processa e mantém estatísticas de desempenho do banco de dados. 
+▶️ Essas estatísticas são usadas pelo Automatic Database Diagnostic Monitor (ADDM) para identificar problemas de desempenho.
+▶️ AWR coleta automaticamente dados de desempenho em intervalos regulares
+▶️ O AWR armazena informações sobre a atividade do sistema, sessões de banco de dados e eventos de espera.
+▶️ Utiliza snapshots, que são amostras dos dados de desempenho coletadas em intervalos de tempo específicos
+⚠️ É uma Extra Option, porém quando você instala o Oracle habilita este recurso por default (pegadinha da Oracle)
+
+
+=================================================================
+== 🎯 Quando utilizar o AWR
+=================================================================
+▶️ Quando é necessário analisar o que ocorreu no passado, mesmo que esse passado seja recente 
+▶️ Por exemplo, às 09h00 da manhã você pode analisar o que ocorreu entre 06:00 e 07:00
+
+
+=================================================================
+== 🎯 Benefícios do AWR
+=================================================================
+✅ Coleta Automatizada de Dados
+✅ Dados Históricos
+✅ Identificação de Gargalos
+✅ Relatórios AWR
+✅ Relatórios Comparativos
+✅ Definição de Baselines
+✅ Análise de Tendências
+✅ Integração com ADDM
+
+
+
+
+=================================================================
+== 🎯 Configurações do AWR
+=================================================================
+▶️ Quando você cria um database no Oracle EE, ele já configura o AWR
+▶️ Ele executa um snapshot a cada hora e mantém as informações por 8 dias 
+▶️ O parâmentro STATISTICS_LEVEL define o comportamento do AWR:
+	▫️ TYPICAL: Coleta todas as estatísticas necessárias, é o padrão. 
+	▫️ BASIC: Desativa o AWR
+	▫️ ALL: Coleta estatísticas de forma detalhada, só habilite se souber o que estiver fazendo
+
+
+SQL> select
+       extract( day from snap_interval) *24*60+
+       extract( hour from snap_interval) *60+
+       extract( minute from snap_interval ) "Snapshot Interval",
+       (extract( day from retention) *24*60+
+       extract( hour from retention) *60+
+       extract( minute from retention ))/60/24 "Retention Interval (Days)"
+from dba_hist_wr_control;
+
+=================================================================
+== 🎯 Modificando as configurações do AWR
+=================================================================
+-- 30 dias a cada 30 minutos
+SQL> execute dbms_workload_repository.modify_snapshot_settings(interval => 15,retention => 86400); 
+
+
+=================================================================
+== 🎯 Verificando os snapshots criados
+=================================================================
+SQL> SELECT 
+SNAP_ID
+, to_char(BEGIN_INTERVAL_TIME,'DD/MM/RRRR HH24:MI') BEGIN_INTERVAL_TIME
+, to_char(END_INTERVAL_TIME,'DD/MM/RRRR HH24:MI')  END_INTERVAL_TIME
+FROM DBA_HIST_SNAPSHOT 
+ORDER BY SNAP_ID  desc
+FETCH FIRST 5 ROWS ONLY;
+
+
+=================================================================
+== 🎯 Criando um snapshot manualmente
+=================================================================
+SQL> EXECUTE DBMS_WORKLOAD_REPOSITORY.CREATE_SNAPSHOT;
+
+
+
+=================================================================
+== 🎯 Excluindo snapshots
+=================================================================
+SQL> EXECUTE DBMS_WORKLOAD_REPOSITORY.DROP_SNAPSHOT_RANGE(low_snap_id  => 698, high_snap_id => 699);
+
+
+
+=================================================================
+== 🎯 Criando uma baseline
+=================================================================
+▶️ Uma baseline é um período que você considera bom para comparar a performance
+▶️ Os snapshots da baseline vão ser mantidos, independentemente da janela
+
+SQL> EXECUTE DBMS_WORKLOAD_REPOSITORY.CREATE_BASELINE(start_snap_id=>700,end_snap_id=>701,baseline_name=>'good_load2');
+
+=================================================================
+== 🎯 Scripts para gerar relatórios AWR
+=================================================================
+▶️ Tem vários scripts que geram relatório AWR, cada um com uma finalidade diferente
+▶️ Os scripts ficam no servidor, no diretório @$ORACLE_HOME/rdbms/admin/
+▶️ Gera um arquivo no formato html ou texto
+▶️ Também podem ser gerado através de procedures
+▶️ Abaixo os principais relatórios:
+	▫️ awrrpt.sql		Gera o relatório AWR para ambientes Single Instance
+	▫️ awrgrpt.sql		Gera o relatório AWR para ambientes RAC
+	▫️ awrddrpt.sql	Gera o relatório AWR comparando dois períodos do tempo
+
+ter 09:00 - 10:00 (nesse período ficou lento)
+
+
+
+comparar a terca atual 09:00 as 10:00 com a segunda da dia anterior
+
+=================================================================
+== 🎯 Gerando relatórios AWR
+=================================================================
+$ . oraenv
+$ sqlplus / as sysdba
+
+SQL> @$ORACLE_HOME/rdbms/admin/awrrpt.sql
+SQL> @$ORACLE_HOME/rdbms/admin/awrgrpt.sql
+SQL> @$ORACLE_HOME/rdbms/admin/awrddrpt.sql
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É um ótimo recurso para se analisar problemas de performance
+💡 Normalmente é utilizado quando queremos olhar para o passado
+💡 Fornece uma infinidade de informações, não tente aprender tudo de uma vez, evolua aos poucos 

@@ -1,0 +1,56 @@
+======================================================
+== Configuração para inicialização do banco
+======================================================
+
+N: Não inicía o banco automaticamente. 
+Y: Inicía o banco automaticamente.
+
+# cat /etc/oratab
+# sed -i 's/:N/:Y/' /etc/oratab
+
+======================================================
+== Testando o restart do banco
+======================================================
+
+$ export ORACLE_HOME=/u01/app/oracle/product/19c/db_1  
+$ export PATH=$ORACLE_HOME/bin:$PATH  
+$ which dbca  
+
+$ dbsstart $ORACLE_HOME
+$ dbshut $ORACLE_HOME 
+
+Obs: Inicía todos os bancos com Y no /etc/oratab
+
+======================================================
+== Automatizando inicialização
+======================================================
+
+sudo sh -c 'cat > /etc/systemd/system/oracle-db.service << EOF
+[Unit]
+Description=Oracle Database Service
+After=network.target
+
+[Service]
+Type=forking
+User=oracle
+Group=oinstall
+Environment=ORACLE_HOME=/u01/app/oracle/product/19.3/db_1
+ExecStart=/bin/su - oracle -c "$ORACLE_HOME/bin/dbstart"
+ExecStop=/bin/su - oracle -c "$ORACLE_HOME/bin/dbshut"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+# Recarrega o systemd para que ele reconheça o novo serviço
+sudo systemctl daemon-reload
+
+# Habilita o serviço para iniciar no boot do sistema
+sudo systemctl enable oracle-db.service
+
+# (Opcional) Inicia o serviço imediatamente para testar
+sudo systemctl start oracle-db.service
+
+# (Opcional) Verifica o status do serviço
+sudo systemctl status oracle-db.service

@@ -1,0 +1,92 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Criando e acessando objetos em outros schemas						|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/ALTER-SESSION.html#GUID-DC7B8CDD-4F89-40CC-875F-F70F673711D4
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Entender a criação e acesso de objetos em outros schemas
+💡 Compreender a influência de especificar o owner ao criar um objeto
+💡 Utilizar o comando ALTER SESSION SET CURRENT_SCHEMA
+💡 Realizar exemplos práticos de criação e acesso de objetos em diferentes schemas
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Criando um usuário com privilégios
+📍 Criando um usuário com privilégios
+📍 Utilizando ALTER SESSION SET CURRENT_SCHEMA
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ É muito comum no dia a dia estarmos criando objetos em outros schemas
+▶️ É necessário ter privilégios apropriados, como CREATE ANY TABLE, CREATE ANY PROCEDURE, etc
+
+
+=================================================================
+== 🎯 Criando um usuário com privilégios 
+=================================================================
+-- Criar um usuário e conceder privilégios
+SQL> CREATE USER user1 IDENTIFIED BY password;
+SQL> GRANT CREATE SESSION, CREATE TABLE TO user1;
+
+-- Criar outro usuário
+SQL> CREATE USER user2 IDENTIFIED BY password;
+SQL> GRANT CREATE SESSION, CREATE TABLE TO user2;
+
+-- Conceder privilégios ao usuário user1 para criar objetos no schema user2
+SQL> GRANT CREATE ANY TABLE TO user1;
+
+=================================================================
+== 🎯 Criando um usuário com privilégios 
+=================================================================
+-- Conectar como user1
+SQL> conn user1/password@ORCL
+
+-- Criar uma tabela no schema user2
+SQL> CREATE TABLE EMPLOYEES (
+    employee_id NUMBER PRIMARY KEY,
+    first_name VARCHAR2(50),
+    last_name VARCHAR2(50)
+);
+
+SQL> conn / as sysdba
+SQL> grant ALTER ANY TABLE, CREATE ANY INDEX to user1;
+SQL> conn user1/password@ORCL
+
+
+=================================================================
+== 🎯 Utilizando ALTER SESSION SET CURRENT_SCHEMA 
+=================================================================
+💡 Esta é uma opção útil quando precisamos criar muitos objetos em outro schema
+-- Conectar como user1
+SQL> conn user1/password@ORCL
+
+-- Alterar o schema atual para user2
+SQL> ALTER SESSION SET CURRENT_SCHEMA = user2;
+
+
+SQL> SELECT SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA')  FROM DUAL;
+
+-- Criar uma tabela no schema user2 sem especificar o owner
+SQL> CREATE TABLE departments (
+    department_id NUMBER PRIMARY KEY,
+    department_name VARCHAR2(50)
+);
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essa é uma atividade cotidiana do DBA, domine-a.
+💡 É algo simples, porém muitos DBAs em início de carreira tem dificuldades com essse assunto

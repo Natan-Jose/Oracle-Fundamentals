@@ -1,0 +1,94 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Criando uma estrutura para testes									|
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://www.dominicgiles.com
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Aprender a criar uma estrutura para fazer testes de carga
+
+
+=================================================================
+== 🎯 O que é o Swingbench
+=================================================================
+▶️ É um stress test para o Oracle database (12c, 18c, 19c, 21c, 23c)
+▶️ É grátis
+▶️ Muito útil para simular cenários de carga
+
+
+=================================================================
+== 🎯 Links para download (java e swingbench)
+=================================================================
+https://www.dominicgiles.com/downloads/
+https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html	
+
+
+=================================================================
+== 🎯 Criação do diretório temporário
+=================================================================
+# mkdir /u01/swingbenchlatest
+# cd /u01/swingbenchlatest
+
+
+=================================================================
+== 🎯 Download dos pacotes necessários
+=================================================================
+# curl -L -o swingbenchlatest.zip https://www.dominicgiles.com/site_downloads/swingbenchlatest.zip
+# curl -L -o jdk-17.0.7_linux-x64_bin.rpm https://download.oracle.com/java/17/archive/jdk-17.0.7_linux-x64_bin.rpm
+
+
+=================================================================
+== 🎯 Instalação do Java
+=================================================================
+# dnf -y localinstall jdk-17.0.7_linux-x64_bin.rpm
+
+=================================================================
+== 🎯 Descompactação do swingbench
+=================================================================
+# unzip swingbenchlatest.zip
+# cd swingbench/bin
+
+
+=================================================================
+== 🎯 Criando a tablespace (database ORCL)
+=================================================================
+$ . oraenv 
+SQL> create tablespace TS_SOE datafile size 1g  autoextend on next 1g maxsize 31g;
+
+
+=================================================================
+== 🎯 Criando o schema e populando as tabelas
+=================================================================
+Obs.  -scale 1 Define o size do schema, quanto maior mais dados.
+
+# ./oewizard -cl -create -cs //localhost/orcl -u SOE -p SOE -scale 1 -tc 4 -dba "sys as sysdba" -dbap "Wellcome1" -ts TS_SOE
+
+SQL > SELECT * FROM DBA_TABLES
+	  WHERE OWNER = 'SOE';
+
+SQL> SELECT TABLE_NAME, NUM_ROWS
+	 FROM DBA_TABLES
+	 WHERE OWNER = 'SOE';
+
+
+# cd $ORACLE_HOME/suptools/oratop/
+# ./oratop -rf / as sysdba
+
+=================================================================
+== 🎯 Simulando o stress test
+=================================================================
+Obs. O parâmetro -uc 10 define a quantidade de usuários simultâneos
+$ ./charbench -uc 10 -cs //localhost/orcl -c ../configs/SOE_Server_Side_V2.xml -u SOE -p SOE -parallel 2
+
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 É uma ferramenta muito útil para simular cenários de Stress Test

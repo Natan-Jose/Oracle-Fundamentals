@@ -1,0 +1,116 @@
+|-------------------------------------------------------------------------------|
+| Aula      : Operações Comuns em Ambientes Multitenant                         |
+| Módulo    : Managing Oracle Database                                          |
+| Curso     : Oracle Fundamentals                                               |
+| Instrutor : Marcio Mandarino                                                  |
+| URL       : mrdba.com.br/oracle_fundamentals                                  |
+|-------------------------------------------------------------------------------|
+| Referência: https://docs.oracle.com/en/database/oracle/oracle-database/19/multi/creating-pdbs.html#GUID-9A250D93-5B3B-4643-BE85-F32CC7B0E413
+|-------------------------------------------------------------------------------|
+
+
+=================================================================
+== 🎯 Objetivos da Aula:
+=================================================================
+💡 Saber fazer operações básicas em ambientes Multitenant
+
+
+=================================================================
+== 🎯 Resumo
+=================================================================
+📍 Conceito geral
+📍 Criando PDBs
+📍 Iniciando e Parando PDBs
+📍 Excluindo um PDB
+📍 Clonando um PDB
+📍 Conclusão
+
+=================================================================
+== 🎯 Conceito geral
+=================================================================
+▶️ Existem várias tarefas administrativas que podem ser feitas em um PDB, as mais comuns são:
+	▫️ Iniciar e parar um PDB
+	▫️ Criar um PDB
+	▫️ Excluir um PDB
+	▫️ Clonar um PDB
+	▫️ Backup & Restore do PBD
+
+=================================================================
+== 🎯 Criando PDBs
+=================================================================
+▶️ A criação de PDBs pode ser realizada usando o comando CREATE PLUGGABLE DATABASE.
+▶️ Existem várias opções para criar PDBs:
+	▫️ A partir de um arquivo de template
+	▫️ Clonagem de um PDB existente
+	▫️ Utilizando uma seed PDB 
+ 
+
+-- Conectar ao CDB como usuário sysdba
+$ . oraenv
+$ sqlplus / as sysdba
+SQL> show con_name
+
+-- Criar um PDB a partir da seed PDB
+SQL> CREATE PLUGGABLE DATABASE pdb2 ADMIN USER pdb_admin IDENTIFIED BY "Wellcome1";
+
+SQL> CREATE PLUGGABLE DATABASE pdb3 ADMIN USER pdb_adm IDENTIFIED BY Password1
+  CREATE_FILE_DEST='/u03/oradata/';
+
+-- Verificar se o PDB foi criado com sucesso
+SQL> SHOW PDBS;
+
+=================================================================
+== 🎯 Iniciando e Parando PDBs
+=================================================================
+▶️ Para iniciar um PDB, utilize o comando ALTER PLUGGABLE DATABASE OPEN
+SQL> ALTER PLUGGABLE DATABASE pdb2 OPEN;
+
+▶️ Para fechar um PDB, use o comando ALTER PLUGGABLE DATABASE CLOSE
+SQL> ALTER PLUGGABLE DATABASE pdb2 CLOSE;
+SQL> ALTER PLUGGABLE DATABASE pdb3 CLOSE IMMEDIATE;
+
+⚠️ Você também pode se conectar no pdb e fazer um startup e shutdown
+SQL> alter session set container = pdb1;
+SQL> startup;
+SQL> shutdown;
+
+💡 Você pode fazer operações em múltiplos PDBS
+SQL> ALTER PLUGGABLE DATABASE ALL OPEN;
+SQL> ALTER PLUGGABLE DATABASE ALL CLOSE IMMEDIATE;
+
+💡 Você pode fazer operações em múltiplos PDBS, criando exceções
+SQL> ALTER PLUGGABLE DATABASE ALL EXCEPT pdb2 CLOSE IMMEDIATE;
+SQL> ALTER PLUGGABLE DATABASE ALL EXCEPT pdb1 OPEN;
+
+
+=================================================================
+== 🎯 Excluindo um PDB
+=================================================================
+💀 Excluir um PDB remove completamente o banco de dados pluggable do CDB
+💀 Se for em ambiente real, sempre tenha backup, mesmo quando digam que não é necessário
+▶️ Para excluir um PDB, ele precisa estar fechado
+
+-- Fechar o PDB antes de excluí-lo
+SQL> ALTER PLUGGABLE DATABASE pdb2 CLOSE IMMEDIATE;
+
+-- Excluir o PDB, incluindo seus dados
+SQL> DROP PLUGGABLE DATABASE pdb2 INCLUDING DATAFILES;
+
+
+=================================================================
+== 🎯 Clonando um PDB
+=================================================================
+▶️ Clonar um PDB permite criar uma cópia exata de um PDB existente.
+
+-- Clonar o PDB pdb1 para um novo PDB pdb1_clone
+SQL> CREATE PLUGGABLE DATABASE pdb1_clone2 FROM pdb1
+CREATE_FILE_DEST='/u03/oradata/';
+
+=================================================================
+== 🎯 Conclusão
+=================================================================
+💡 Essas tarefas não são realizadas com frequência no dia a dia do DBA
+💡 São tarefas realizadas de forma mais pontual
+💡 É preciso treinar em laboratórios, para quando precisar realizá-las na prática, estar bem confiante
+💡 Seja sempre cauteloso quando for excluir um PDB
+ 
